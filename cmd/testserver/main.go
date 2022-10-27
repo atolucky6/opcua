@@ -24,6 +24,7 @@ import (
 
 	"github.com/awcullen/opcua/server"
 	"github.com/awcullen/opcua/ua"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -110,6 +111,48 @@ func main() {
 
 	// load nodeset
 	nm := srv.NamespaceManager()
+
+	// Create new object node
+	rootID := ua.NewNodeIDGUID(1, uuid.New())
+	nm.AddNode(server.NewObjectNode(
+		rootID,
+		ua.NewQualifiedName(1, "Root"),
+		ua.NewLocalizedText("Root", ""),
+		ua.NewLocalizedText("This is a root", ""),
+		nil,
+		[]ua.Reference{
+			// <Reference ReferenceType="Organizes" IsForward="false">i=85</Reference>
+			// <Reference ReferenceType="HasTypeDefinition">i=61</Reference>
+			ua.NewReference(ua.ReferenceTypeIDOrganizes, true, ua.NewExpandedNodeID(ua.ObjectIDObjectsFolder)),
+			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.ObjectTypeIDFolderType)),
+		},
+		byte(0),
+	))
+
+	nm.AddNode(server.NewVariableNode(
+		ua.NewNodeIDGUID(1, uuid.New()),
+		ua.NewQualifiedName(1, "Property1"),
+		ua.NewLocalizedText("Property1", ""),
+		ua.NewLocalizedText("This is a Property1 of root", ""),
+		nil,
+		[]ua.Reference{
+			//<Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+			//<Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=Demo.NodeClasses.Variable</Reference>
+			//ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(rootID)),
+			ua.NewReference(ua.ReferenceTypeIDHasProperty, true, ua.NewExpandedNodeID(rootID)),
+			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDPropertyType)),
+		},
+		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
+		ua.DataTypeIDSessionDiagnosticsDataType,
+		ua.ValueRankScalar,
+		[]uint32{},
+		ua.AccessLevelsCurrentRead,
+		125,
+		false,
+		nil,
+		// ns=1;g=e87231ff-8a3e-4967-907f-0a4c61996cdc
+	))
+
 	if err := nm.LoadNodeSetFromBuffer(nodeset); err != nil {
 		os.Exit(2)
 	}
