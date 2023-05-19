@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/awcullen/opcua/ua"
+	"github.com/afs/server/pkg/opcua/ua"
 	"github.com/gammazero/workerpool"
 )
 
@@ -45,8 +45,8 @@ var (
 	nodeset104 []byte
 )
 
-// Server implements an OpcUa server for clients.
-type Server struct {
+// UAServer implements an OpcUa server for clients.
+type UAServer struct {
 	sync.RWMutex
 	localDescription                   ua.ApplicationDescription
 	endpoints                          []ua.EndpointDescription
@@ -100,8 +100,8 @@ type Server struct {
 // Specify the ApplicationDescription as defined in https://reference.opcfoundation.org/v104/Core/docs/Part4/7.1/
 // The files must contain PEM encoded data.
 // The endpointURL is in the form opc.tcp://[host]:[port]
-func New(localDescription ua.ApplicationDescription, certPath, keyPath, endpointURL string, options ...Option) (*Server, error) {
-	srv := &Server{
+func New(localDescription ua.ApplicationDescription, certPath, keyPath, endpointURL string, options ...Option) (*UAServer, error) {
+	srv := &UAServer{
 		localDescription:                   localDescription,
 		certPath:                           certPath,
 		keyPath:                            keyPath,
@@ -162,28 +162,28 @@ func New(localDescription ua.ApplicationDescription, certPath, keyPath, endpoint
 }
 
 // LocalDescription gets the application description.
-func (srv *Server) LocalDescription() ua.ApplicationDescription {
+func (srv *UAServer) LocalDescription() ua.ApplicationDescription {
 	srv.RLock()
 	defer srv.RUnlock()
 	return srv.localDescription
 }
 
 // LocalCertificate gets the certificate for the local application.
-func (srv *Server) LocalCertificate() []byte {
+func (srv *UAServer) LocalCertificate() []byte {
 	srv.RLock()
 	defer srv.RUnlock()
 	return srv.localCertificate
 }
 
 // EndpointURL gets the endpoint url.
-func (srv *Server) EndpointURL() string {
+func (srv *UAServer) EndpointURL() string {
 	srv.RLock()
 	defer srv.RUnlock()
 	return srv.endpointURL
 }
 
 // Endpoints gets the endpoint descriptions.
-func (srv *Server) Endpoints() []ua.EndpointDescription {
+func (srv *UAServer) Endpoints() []ua.EndpointDescription {
 	srv.RLock()
 	defer srv.RUnlock()
 	if srv.endpoints == nil {
@@ -193,111 +193,111 @@ func (srv *Server) Endpoints() []ua.EndpointDescription {
 }
 
 // Closing gets a channel that broadcasts the closing of the server.
-func (srv *Server) Closing() <-chan struct{} {
+func (srv *UAServer) Closing() <-chan struct{} {
 	srv.RLock()
 	defer srv.RUnlock()
 	return srv.closing
 }
 
 // State gets the ServerState.
-func (srv *Server) State() ua.ServerState {
+func (srv *UAServer) State() ua.ServerState {
 	srv.RLock()
 	defer srv.RUnlock()
 	return srv.state
 }
 
-func (srv *Server) setState(value ua.ServerState) {
+func (srv *UAServer) setState(value ua.ServerState) {
 	srv.Lock()
 	defer srv.Unlock()
 	srv.state = value
 }
 
 // NamespaceUris gets the namespace uris.
-func (srv *Server) NamespaceUris() []string {
+func (srv *UAServer) NamespaceUris() []string {
 	srv.RLock()
 	defer srv.RUnlock()
 	return srv.namespaceManager.NamespaceUris()
 }
 
 // ServerUris gets the server uris.
-func (srv *Server) ServerUris() []string {
+func (srv *UAServer) ServerUris() []string {
 	srv.RLock()
 	defer srv.RUnlock()
 	return srv.serverUris
 }
 
 // RolePermissions gets the RolePermissions.
-func (srv *Server) RolePermissions() []ua.RolePermissionType {
+func (srv *UAServer) RolePermissions() []ua.RolePermissionType {
 	srv.RLock()
 	defer srv.RUnlock()
 	return srv.rolePermissions
 }
 
 // WorkerPool gets a pool of workers.
-func (srv *Server) WorkerPool() *workerpool.WorkerPool {
+func (srv *UAServer) WorkerPool() *workerpool.WorkerPool {
 	srv.RLock()
 	defer srv.RUnlock()
 	return srv.workerpool
 }
 
 // ChannelManager gets the secure channel manager.
-func (srv *Server) ChannelManager() *ChannelManager {
+func (srv *UAServer) ChannelManager() *ChannelManager {
 	srv.RLock()
 	defer srv.RUnlock()
 	return srv.channelManager
 }
 
 // SessionManager gets the session manager.
-func (srv *Server) SessionManager() *SessionManager {
+func (srv *UAServer) SessionManager() *SessionManager {
 	srv.RLock()
 	defer srv.RUnlock()
 	return srv.sessionManager
 }
 
 // NamespaceManager gets the namespace manager.
-func (srv *Server) NamespaceManager() *NamespaceManager {
+func (srv *UAServer) NamespaceManager() *NamespaceManager {
 	srv.RLock()
 	defer srv.RUnlock()
 	return srv.namespaceManager
 }
 
 // SubscriptionManager gets the subscription Manager.
-func (srv *Server) SubscriptionManager() *SubscriptionManager {
+func (srv *UAServer) SubscriptionManager() *SubscriptionManager {
 	srv.RLock()
 	defer srv.RUnlock()
 	return srv.subscriptionManager
 }
 
 // Scheduler gets the polling scheduler.
-func (srv *Server) Scheduler() *Scheduler {
+func (srv *UAServer) Scheduler() *Scheduler {
 	srv.RLock()
 	defer srv.RUnlock()
 	return srv.scheduler
 }
 
 // Historian gets the HistoryReadWriter.
-func (srv *Server) Historian() HistoryReadWriter {
+func (srv *UAServer) Historian() HistoryReadWriter {
 	srv.RLock()
 	defer srv.RUnlock()
 	return srv.historian
 }
 
 // MaxSessionCount gets the maximum number of sessions.
-func (srv *Server) MaxSessionCount() uint32 {
+func (srv *UAServer) MaxSessionCount() uint32 {
 	srv.RLock()
 	defer srv.RUnlock()
 	return srv.maxSessionCount
 }
 
 // MaxSubscriptionCount gets the maximum number of subscriptions.
-func (srv *Server) MaxSubscriptionCount() uint32 {
+func (srv *UAServer) MaxSubscriptionCount() uint32 {
 	srv.RLock()
 	defer srv.RUnlock()
 	return srv.maxSubscriptionCount
 }
 
 // ServerCapabilities gets the capabilities of the server.
-func (srv *Server) ServerCapabilities() *ua.ServerCapabilities {
+func (srv *UAServer) ServerCapabilities() *ua.ServerCapabilities {
 	srv.RLock()
 	defer srv.RUnlock()
 	return srv.serverCapabilities
@@ -307,7 +307,7 @@ func (srv *Server) ServerCapabilities() *ua.ServerCapabilities {
 // handles service requests.
 // ListenAndServe always returns a non-nil error. After Shutdown or Close,
 // the returned error is BadServerHalted.
-func (srv *Server) ListenAndServe() error {
+func (srv *UAServer) ListenAndServe() error {
 	srv.stateSemaphore <- struct{}{}
 	if srv.state != ua.ServerStateUnknown {
 		<-srv.stateSemaphore
@@ -333,7 +333,7 @@ func (srv *Server) ListenAndServe() error {
 }
 
 // Close server.
-func (srv *Server) Close() error {
+func (srv *UAServer) Close() error {
 	srv.stateSemaphore <- struct{}{}
 	if srv.state != ua.ServerStateRunning {
 		<-srv.stateSemaphore
@@ -371,7 +371,7 @@ func (srv *Server) Close() error {
 }
 
 // Abort the server.
-func (srv *Server) Abort() error {
+func (srv *UAServer) Abort() error {
 	srv.stateSemaphore <- struct{}{}
 	if srv.state != ua.ServerStateRunning {
 		<-srv.stateSemaphore
@@ -401,7 +401,7 @@ func (srv *Server) Abort() error {
 	return nil
 }
 
-func (srv *Server) serve(l net.Listener) error {
+func (srv *UAServer) serve(l net.Listener) error {
 	var delay time.Duration
 	for {
 		conn, err := l.Accept()
@@ -442,13 +442,13 @@ func (srv *Server) serve(l net.Listener) error {
 	}
 }
 
-func (srv *Server) handleCloseSecureChannel(ch *serverSecureChannel, requestid uint32, req *ua.CloseSecureChannelRequest) error {
+func (srv *UAServer) handleCloseSecureChannel(ch *serverSecureChannel, requestid uint32, req *ua.CloseSecureChannelRequest) error {
 	srv.ChannelManager().Delete(ch)
 	ch.Close()
 	return nil
 }
 
-func (srv *Server) initializeNamespace() error {
+func (srv *UAServer) initializeNamespace() error {
 	nm := srv.NamespaceManager()
 	if err := nm.LoadNodeSetFromBuffer(nodeset104); err != nil {
 		return err
@@ -652,20 +652,20 @@ func (srv *Server) initializeNamespace() error {
 	}
 	if n, ok := nm.FindObject(ua.ObjectIDServerServerCapabilitiesModellingRules); ok {
 		if mandatory, ok := nm.FindObject(ua.ObjectIDModellingRuleMandatory); ok {
-			mandatory.SetReferences(append(mandatory.References(), ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(n.NodeID()))))
-			n.SetReferences(append(n.References(), ua.NewReference(ua.ReferenceTypeIDHasComponent, false, ua.NewExpandedNodeID(mandatory.NodeID()))))
+			mandatory.SetReferences(append(mandatory.GetReferences(), ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(n.GetNodeID()))))
+			n.SetReferences(append(n.GetReferences(), ua.NewReference(ua.ReferenceTypeIDHasComponent, false, ua.NewExpandedNodeID(mandatory.GetNodeID()))))
 		}
 		if mandatoryPlaceholder, ok := nm.FindObject(ua.ObjectIDModellingRuleMandatoryPlaceholder); ok {
-			mandatoryPlaceholder.SetReferences(append(mandatoryPlaceholder.References(), ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(n.NodeID()))))
-			n.SetReferences(append(n.References(), ua.NewReference(ua.ReferenceTypeIDHasComponent, false, ua.NewExpandedNodeID(mandatoryPlaceholder.NodeID()))))
+			mandatoryPlaceholder.SetReferences(append(mandatoryPlaceholder.GetReferences(), ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(n.GetNodeID()))))
+			n.SetReferences(append(n.GetReferences(), ua.NewReference(ua.ReferenceTypeIDHasComponent, false, ua.NewExpandedNodeID(mandatoryPlaceholder.GetNodeID()))))
 		}
 		if optional, ok := nm.FindObject(ua.ObjectIDModellingRuleOptional); ok {
-			optional.SetReferences(append(optional.References(), ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(n.NodeID()))))
-			n.SetReferences(append(n.References(), ua.NewReference(ua.ReferenceTypeIDHasComponent, false, ua.NewExpandedNodeID(optional.NodeID()))))
+			optional.SetReferences(append(optional.GetReferences(), ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(n.GetNodeID()))))
+			n.SetReferences(append(n.GetReferences(), ua.NewReference(ua.ReferenceTypeIDHasComponent, false, ua.NewExpandedNodeID(optional.GetNodeID()))))
 		}
 		if optionalPlaceholder, ok := nm.FindObject(ua.ObjectIDModellingRuleOptionalPlaceholder); ok {
-			optionalPlaceholder.SetReferences(append(optionalPlaceholder.References(), ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(n.NodeID()))))
-			n.SetReferences(append(n.References(), ua.NewReference(ua.ReferenceTypeIDHasComponent, false, ua.NewExpandedNodeID(optionalPlaceholder.NodeID()))))
+			optionalPlaceholder.SetReferences(append(optionalPlaceholder.GetReferences(), ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(n.GetNodeID()))))
+			n.SetReferences(append(n.GetReferences(), ua.NewReference(ua.ReferenceTypeIDHasComponent, false, ua.NewExpandedNodeID(optionalPlaceholder.GetNodeID()))))
 		}
 	}
 	if nr, ok := nm.FindVariable(ua.VariableIDModellingRuleMandatoryNamingRule); ok {
@@ -905,7 +905,7 @@ func (srv *Server) initializeNamespace() error {
 	return nil
 }
 
-func (srv *Server) buildEndpointDescriptions() []ua.EndpointDescription {
+func (srv *UAServer) buildEndpointDescriptions() []ua.EndpointDescription {
 	eds := []ua.EndpointDescription{}
 	if srv.allowSecurityPolicyNone {
 		toks := []ua.UserTokenPolicy{}

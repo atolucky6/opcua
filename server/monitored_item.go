@@ -11,7 +11,7 @@ import (
 
 	"sync"
 
-	"github.com/awcullen/opcua/ua"
+	"github.com/afs/server/pkg/opcua/ua"
 	deque "github.com/gammazero/deque"
 )
 
@@ -42,7 +42,7 @@ type MonitoredItem struct {
 	eventFilter         ua.EventFilter
 	previousQueuedValue ua.DataValue
 	sub                 *Subscription
-	srv                 *Server
+	srv                 *UAServer
 	prequeue            deque.Deque
 	ts                  time.Time
 	ti                  time.Duration
@@ -184,7 +184,7 @@ func (mi *MonitoredItem) setSamplingInterval(samplingInterval float64) {
 			samplingInterval = maxSamplingInterval
 		}
 		if v, ok := mi.node.(*VariableNode); ok {
-			if min := v.MinimumSamplingInterval(); samplingInterval < min {
+			if min := v.GetMinimumSamplingInterval(); samplingInterval < min {
 				samplingInterval = min
 			}
 		}

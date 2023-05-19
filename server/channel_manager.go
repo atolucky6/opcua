@@ -10,12 +10,12 @@ import (
 // ChannelManager manages the secure channels for a server.
 type ChannelManager struct {
 	sync.RWMutex
-	server       *Server
+	server       *UAServer
 	channelsByID map[uint32]*serverSecureChannel
 }
 
 // NewChannelManager instantiates a new ChannelManager.
-func NewChannelManager(server *Server) *ChannelManager {
+func NewChannelManager(server *UAServer) *ChannelManager {
 	m := &ChannelManager{server: server, channelsByID: make(map[uint32]*serverSecureChannel)}
 	go func(m *ChannelManager) {
 		ticker := time.NewTicker(5 * time.Second)

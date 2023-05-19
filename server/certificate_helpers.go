@@ -8,7 +8,7 @@ import (
 	"encoding/pem"
 	"io/ioutil"
 
-	"github.com/awcullen/opcua/ua"
+	"github.com/afs/server/pkg/opcua/ua"
 )
 
 // validateClientCertificate validates the certificate of the client.

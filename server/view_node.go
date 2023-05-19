@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/awcullen/opcua/ua"
+	"github.com/afs/server/pkg/opcua/ua"
 )
 
 type ViewNode struct {
@@ -39,44 +39,44 @@ func NewViewNode(nodeId ua.NodeID, browseName ua.QualifiedName, displayName ua.L
 }
 
 // NodeID returns the NodeID attribute of this node.
-func (n *ViewNode) NodeID() ua.NodeID {
+func (n *ViewNode) GetNodeID() ua.NodeID {
 	return n.nodeId
 }
 
 // NodeClass returns the NodeClass attribute of this node.
-func (n *ViewNode) NodeClass() ua.NodeClass {
+func (n *ViewNode) GetNodeClass() ua.NodeClass {
 	return n.nodeClass
 }
 
 // BrowseName returns the BrowseName attribute of this node.
-func (n *ViewNode) BrowseName() ua.QualifiedName {
+func (n *ViewNode) GetBrowseName() ua.QualifiedName {
 	return n.browseName
 }
 
 // DisplayName returns the DisplayName attribute of this node.
-func (n *ViewNode) DisplayName() ua.LocalizedText {
+func (n *ViewNode) GetDisplayName() ua.LocalizedText {
 	return n.displayName
 }
 
 // Description returns the Description attribute of this node.
-func (n *ViewNode) Description() ua.LocalizedText {
+func (n *ViewNode) GetDescription() ua.LocalizedText {
 	return n.description
 }
 
 // RolePermissions returns the RolePermissions attribute of this node.
-func (n *ViewNode) RolePermissions() []ua.RolePermissionType {
+func (n *ViewNode) GetRolePermissions() []ua.RolePermissionType {
 	return n.rolePermissions
 }
 
 // UserRolePermissions returns the RolePermissions attribute of this node for the current user.
-func (n *ViewNode) UserRolePermissions(ctx context.Context) []ua.RolePermissionType {
+func (n *ViewNode) GetUserRolePermissions(ctx context.Context) []ua.RolePermissionType {
 	filteredPermissions := []ua.RolePermissionType{}
 	session, ok := ctx.Value(SessionKey).(*Session)
 	if !ok {
 		return filteredPermissions
 	}
 	roles := session.UserRoles()
-	rolePermissions := n.RolePermissions()
+	rolePermissions := n.GetRolePermissions()
 	if rolePermissions == nil {
 		rolePermissions = session.Server().RolePermissions()
 	}
@@ -91,7 +91,7 @@ func (n *ViewNode) UserRolePermissions(ctx context.Context) []ua.RolePermissionT
 }
 
 // References returns the References of this node.
-func (n *ViewNode) References() []ua.Reference {
+func (n *ViewNode) GetReferences() []ua.Reference {
 	n.RLock()
 	res := n.references
 	n.RUnlock()

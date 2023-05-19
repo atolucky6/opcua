@@ -565,14 +565,6 @@ type AliasNameDataType struct {
     ReferencedNodes    []ExpandedNodeID
 }
 
-
-// RolePermissionType structure.
-type RolePermissionType struct {
-    RoleID         NodeID
-    Permissions    PermissionType
-}
-
-
 // StructureField structure.
 type StructureField struct {
     Name               string

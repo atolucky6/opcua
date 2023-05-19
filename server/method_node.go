@@ -6,7 +6,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/awcullen/opcua/ua"
+	"github.com/afs/server/pkg/opcua/ua"
 )
 
 // MethodNode is a Node class that describes the syntax of a object's Method.
@@ -42,37 +42,37 @@ func NewMethodNode(nodeID ua.NodeID, browseName ua.QualifiedName, displayName ua
 }
 
 // NodeID returns the NodeID attribute of this node.
-func (n *MethodNode) NodeID() ua.NodeID {
+func (n *MethodNode) GetNodeID() ua.NodeID {
 	return n.nodeID
 }
 
 // NodeClass returns the NodeClass attribute of this node.
-func (n *MethodNode) NodeClass() ua.NodeClass {
+func (n *MethodNode) GetNodeClass() ua.NodeClass {
 	return n.nodeClass
 }
 
 // BrowseName returns the BrowseName attribute of this node.
-func (n *MethodNode) BrowseName() ua.QualifiedName {
+func (n *MethodNode) GetBrowseName() ua.QualifiedName {
 	return n.browseName
 }
 
 // DisplayName returns the DisplayName attribute of this node.
-func (n *MethodNode) DisplayName() ua.LocalizedText {
+func (n *MethodNode) GetDisplayName() ua.LocalizedText {
 	return n.displayName
 }
 
 // Description returns the Description attribute of this node.
-func (n *MethodNode) Description() ua.LocalizedText {
+func (n *MethodNode) GetDescription() ua.LocalizedText {
 	return n.description
 }
 
 // RolePermissions returns the RolePermissions attribute of this node.
-func (n *MethodNode) RolePermissions() []ua.RolePermissionType {
+func (n *MethodNode) GetRolePermissions() []ua.RolePermissionType {
 	return n.rolePermissions
 }
 
 // UserRolePermissions returns the RolePermissions attribute of this node for the current user.
-func (n *MethodNode) UserRolePermissions(ctx context.Context) []ua.RolePermissionType {
+func (n *MethodNode) GetUserRolePermissions(ctx context.Context) []ua.RolePermissionType {
 	filteredPermissions := []ua.RolePermissionType{}
 	session, ok := ctx.Value(SessionKey).(*Session)
 	if !ok {
@@ -82,7 +82,7 @@ func (n *MethodNode) UserRolePermissions(ctx context.Context) []ua.RolePermissio
 	if len(roles) == 0 {
 		return filteredPermissions
 	}
-	rolePermissions := n.RolePermissions()
+	rolePermissions := n.GetRolePermissions()
 	if rolePermissions == nil {
 		rolePermissions = session.Server().RolePermissions()
 	}
@@ -97,7 +97,7 @@ func (n *MethodNode) UserRolePermissions(ctx context.Context) []ua.RolePermissio
 }
 
 // References returns the References of this node.
-func (n *MethodNode) References() []ua.Reference {
+func (n *MethodNode) GetReferences() []ua.Reference {
 	n.RLock()
 	res := n.references
 	n.RUnlock()
@@ -126,7 +126,7 @@ func (n *MethodNode) UserExecutable(ctx context.Context) bool {
 		return false
 	}
 	roles := session.UserRoles()
-	rolePermissions := n.RolePermissions()
+	rolePermissions := n.GetRolePermissions()
 	if rolePermissions == nil {
 		rolePermissions = session.Server().RolePermissions()
 	}

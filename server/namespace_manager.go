@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/awcullen/opcua/ua"
+	"github.com/afs/server/pkg/opcua/ua"
 	"github.com/gammazero/deque"
 	"github.com/google/uuid"
 )
@@ -26,14 +26,14 @@ var (
 // NamespaceManager manages the namespaces for a server.
 type NamespaceManager struct {
 	sync.RWMutex
-	server         *Server
+	server         *UAServer
 	namespaces     []string
 	nodes          map[ua.NodeID]Node
 	variantTypeMap map[ua.NodeID]byte
 }
 
 // NewNamespaceManager instantiates a new NamespaceManager.
-func NewNamespaceManager(server *Server) *NamespaceManager {
+func NewNamespaceManager(server *UAServer) *NamespaceManager {
 	return &NamespaceManager{
 		server:         server,
 		namespaces:     []string{"http://opcfoundation.org/UA/", server.LocalDescription().ApplicationURI},
@@ -102,11 +102,11 @@ func (m *NamespaceManager) FindVariable(id ua.NodeID) (node *VariableNode, ok bo
 func (m *NamespaceManager) FindProperty(startNode Node, browseName ua.QualifiedName) (node *VariableNode, ok bool) {
 	m.RLock()
 	defer m.RUnlock()
-	for _, r := range startNode.References() {
+	for _, r := range startNode.GetReferences() {
 		if !r.IsInverse && ua.ReferenceTypeIDHasProperty == r.ReferenceTypeID {
 			id := ua.ToNodeID(r.TargetID, m.namespaces)
 			if node1, ok1 := m.nodes[id]; ok1 {
-				if browseName == node1.BrowseName() {
+				if browseName == node1.GetBrowseName() {
 					node, ok = node1.(*VariableNode)
 					return
 				}
@@ -120,11 +120,11 @@ func (m *NamespaceManager) FindProperty(startNode Node, browseName ua.QualifiedN
 func (m *NamespaceManager) FindComponent(startNode Node, browseName ua.QualifiedName) (node Node, ok bool) {
 	m.RLock()
 	defer m.RUnlock()
-	for _, r := range startNode.References() {
+	for _, r := range startNode.GetReferences() {
 		if !r.IsInverse && ua.ReferenceTypeIDHasComponent == r.ReferenceTypeID {
 			id := ua.ToNodeID(r.TargetID, m.namespaces)
 			if node1, ok1 := m.nodes[id]; ok1 {
-				if browseName == node1.BrowseName() {
+				if browseName == node1.GetBrowseName() {
 					node, ok = node1, true
 					return
 				}
@@ -155,7 +155,7 @@ loop:
 	}
 	i++
 	if n, ok := m.FindNode(id); ok {
-		for _, r := range n.References() {
+		for _, r := range n.GetReferences() {
 			if r.IsInverse && ua.ReferenceTypeIDHasSubtype == r.ReferenceTypeID {
 				id = ua.ToNodeID(r.TargetID, m.NamespaceUris())
 				if supertype == id {
@@ -171,7 +171,7 @@ loop:
 // FindSuperType returns the immediate supertype for the type.
 func (m *NamespaceManager) FindSuperType(typeid ua.NodeID) ua.NodeID {
 	if n, ok := m.FindNode(typeid); ok {
-		for _, r := range n.References() {
+		for _, r := range n.GetReferences() {
 			if r.IsInverse && ua.ReferenceTypeIDHasSubtype == r.ReferenceTypeID {
 				return ua.ToNodeID(r.TargetID, m.NamespaceUris())
 			}
@@ -325,7 +325,7 @@ func (m *NamespaceManager) SetMultiStateValueDiscreteTypeBehavior(node *Variable
 			return req.Value, ua.Good
 		}
 		// validate
-		enumValues := toEnumValues(enumValuesNode.Value().Value.([]ua.ExtensionObject))
+		enumValues := toEnumValues(enumValuesNode.GetValue().Value.([]ua.ExtensionObject))
 		for _, ev := range enumValues {
 			if ev.Value == value {
 				node.SetValue(ua.NewDataValue(req.Value.Value, req.Value.StatusCode, time.Now(), 0, time.Now(), 0))
@@ -348,19 +348,19 @@ func toEnumValues(v []ua.ExtensionObject) []ua.EnumValueType {
 
 func (m *NamespaceManager) addNodes(nodes []Node) error {
 	for _, node := range nodes {
-		m.nodes[node.NodeID()] = node
+		m.nodes[node.GetNodeID()] = node
 	}
 	// add inverse refs of added nodes
 	for _, node := range nodes {
-		id := node.NodeID()
-		for _, r := range node.References() {
+		id := node.GetNodeID()
+		for _, r := range node.GetReferences() {
 			if r.ReferenceTypeID == ua.ReferenceTypeIDHasTypeDefinition || r.ReferenceTypeID == ua.ReferenceTypeIDHasModellingRule {
 				continue
 			}
 			t, ok := m.nodes[ua.ToNodeID(r.TargetID, m.namespaces)]
 			if ok {
 				flag := false
-				for _, tr := range t.References() {
+				for _, tr := range t.GetReferences() {
 					if tr.ReferenceTypeID == r.ReferenceTypeID && tr.IsInverse != r.IsInverse && ua.ToNodeID(tr.TargetID, m.namespaces) == id {
 						flag = true
 						break
@@ -372,7 +372,7 @@ func (m *NamespaceManager) addNodes(nodes []Node) error {
 						ReferenceTypeID: r.ReferenceTypeID,
 						IsInverse:       !r.IsInverse,
 						TargetID:        ua.NewExpandedNodeID(id)}
-					t.SetReferences(append(t.References(), inverseRef))
+					t.SetReferences(append(t.GetReferences(), inverseRef))
 				}
 			} else {
 				log.Printf("Error finding reference target: %s\n", r.TargetID)
@@ -417,16 +417,16 @@ func (m *NamespaceManager) DeleteNodes(nodes []Node, deleteChildren bool) error 
 }
 
 func (m *NamespaceManager) deleteNodeandInverseReferences(node Node, uris []string) error {
-	id := node.NodeID()
+	id := node.GetNodeID()
 	// delete inverse references from target nodes.
-	for _, r := range node.References() {
+	for _, r := range node.GetReferences() {
 		if r.ReferenceTypeID == ua.ReferenceTypeIDHasTypeDefinition || r.ReferenceTypeID == ua.ReferenceTypeIDHasModellingRule {
 			continue
 		}
 		t, ok := m.nodes[ua.ToNodeID(r.TargetID, uris)]
 		if ok {
 			refs := []ua.Reference{}
-			for _, tr := range t.References() {
+			for _, tr := range t.GetReferences() {
 				if tr.ReferenceTypeID == r.ReferenceTypeID && tr.IsInverse != r.IsInverse && ua.ToNodeID(tr.TargetID, uris) == id {
 					continue
 				}
@@ -456,7 +456,7 @@ func (m *NamespaceManager) GetSubTypes(node Node) []Node {
 	queue.PushBack(node)
 	for queue.Len() > 0 {
 		node := queue.PopFront().(Node)
-		for _, r := range node.References() {
+		for _, r := range node.GetReferences() {
 			if !r.IsInverse && r.ReferenceTypeID == ua.ReferenceTypeIDHasSubtype {
 				queue.PushBack(node)
 				children = append(children, node)
@@ -480,7 +480,7 @@ func (m *NamespaceManager) GetChildren(node Node, uris []string, withRefTypes []
 		if item.Visited {
 			continue
 		}
-		for _, r := range item.Node.References() {
+		for _, r := range item.Node.GetReferences() {
 			if !r.IsInverse && (withRefTypes == nil || Contains(withRefTypes, r.ReferenceTypeID)) {
 				if target, ok := m.nodes[ua.ToNodeID(r.TargetID, uris)]; ok {
 					queue.PushBack(queuedItem{target, false})
@@ -492,12 +492,52 @@ func (m *NamespaceManager) GetChildren(node Node, uris []string, withRefTypes []
 	return children
 }
 
+func (m *NamespaceManager) UpdateNodeID(node Node, newNodeID ua.NodeID) {
+	m.Lock()
+	defer m.Unlock()
+
+	nodes := []Node{}
+	nodes = append(nodes, node)
+	nodes = append(nodes, m.GetChildren(node, m.namespaces, hasChildandSubtypes)...)
+
+	oldID := node.GetNodeID().GetID().(string)
+	prefix := newNodeID.GetID().(string)
+
+	for _, child := range nodes {
+		delete(m.nodes, child.GetNodeID())
+		refs := []ua.Reference{}
+		for _, r := range child.GetReferences() {
+			if r.ReferenceTypeID == ua.ReferenceTypeIDHasProperty && !r.IsInverse {
+				continue
+			}
+
+			// update reference
+			if currentRefID, ok := r.TargetID.NodeID.(ua.NodeIDString); ok {
+				currentID := currentRefID.GetID().(string)
+				if strings.HasPrefix(currentID, oldID) {
+					newID := []byte{}
+					newID = append(newID, prefix...)
+					newID = append(newID, currentID[len(oldID):]...)
+					r.TargetID = ua.NewExpandedNodeID(ua.NewNodeIDString(DefaultNameSpace, string(newID)))
+					refs = append(refs, r)
+					continue
+				}
+			}
+			refs = append(refs, r)
+		}
+
+		child.SetReferences(refs)
+		child.(HasNodeID).ReplaceNodeIDPrefix(oldID, prefix)
+	}
+	m.addNodes(nodes)
+}
+
 // OnEvent raises the event, starting from the target node, follows HasNotifier references until the Server node.
 func (m *NamespaceManager) OnEvent(target *ObjectNode, evt ua.Event) error {
-	for target.nodeID != ua.ObjectIDServer {
+	for target.NodeId != ua.ObjectIDServer {
 		target.OnEvent(evt)
 		found := false
-		for _, r := range target.References() {
+		for _, r := range target.GetReferences() {
 			if r.IsInverse && r.ReferenceTypeID == ua.ReferenceTypeIDHasNotifier {
 				if target1, ok1 := m.FindObject(ua.ToNodeID(r.TargetID, m.NamespaceUris())); ok1 {
 					found = true

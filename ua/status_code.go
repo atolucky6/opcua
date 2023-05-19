@@ -2,6 +2,15 @@
 
 package ua
 
+import (
+	"bytes"
+	"encoding/json"
+	"strings"
+
+	"github.com/karlseguin/jsonwriter"
+	"github.com/tidwall/gjson"
+)
+
 // StatusCode is the result of the service call.
 type StatusCode uint32
 
@@ -33,6 +42,29 @@ func (c StatusCode) IsSemanticsChanged() bool {
 // IsOverflow returns true if the data value has exceeded the limits of the data type.
 func (c StatusCode) IsOverflow() bool {
 	return ((uint32(c) & InfoTypeMask) == InfoTypeDataValue) && ((uint32(c) & Overflow) == Overflow)
+}
+
+func (a *StatusCode) UnmarshalJSON(b []byte) error {
+	if strings.ToLower(string(b)) == "null" {
+		return nil
+	}
+	jeCode := gjson.GetBytes(b, "code")
+	code := jeCode.Uint()
+	*a = StatusCode(uint32(code))
+	return nil
+}
+
+func (a StatusCode) MarshalJSON() ([]byte, error) {
+	if a.IsGood() {
+		return json.Marshal(nil)
+	}
+	buffer := new(bytes.Buffer)
+	writer := jsonwriter.New(buffer)
+	writer.RootObject(func() {
+		writer.KeyValue("code", uint32(a))
+		writer.KeyString("symbol", a.Error())
+	})
+	return buffer.Bytes(), nil
 }
 
 const (

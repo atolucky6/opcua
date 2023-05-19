@@ -6,19 +6,19 @@ import (
 	"sync"
 	"time"
 
-	"github.com/awcullen/opcua/ua"
+	"github.com/afs/server/pkg/opcua/ua"
 	"github.com/google/uuid"
 )
 
 // SessionManager manages the sessions for a server.
 type SessionManager struct {
 	sync.RWMutex
-	server          *Server
+	server          *UAServer
 	sessionsByToken map[ua.NodeID]*Session
 }
 
 // NewSessionManager instantiates a new SessionManager.
-func NewSessionManager(server *Server) *SessionManager {
+func NewSessionManager(server *UAServer) *SessionManager {
 	m := &SessionManager{server: server, sessionsByToken: make(map[ua.NodeID]*Session)}
 	go func(m *SessionManager) {
 		ticker := time.NewTicker(60 * time.Second)
@@ -124,7 +124,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDSessionDiagnosticsVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsObject.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsObject.GetNodeID())),
 			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(ua.VariableIDServerServerDiagnosticsSessionsDiagnosticsSummarySessionDiagnosticsArray)),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
@@ -199,7 +199,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDNodeID,
@@ -222,7 +222,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDString,
@@ -245,7 +245,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDBaseDataType,
@@ -268,7 +268,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDString,
@@ -291,7 +291,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDString,
@@ -314,7 +314,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDString,
@@ -337,7 +337,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDDouble,
@@ -360,7 +360,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDUInt32,
@@ -383,7 +383,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDDateTime,
@@ -406,7 +406,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDDateTime,
@@ -429,7 +429,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDUInt32,
@@ -452,7 +452,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDUInt32,
@@ -480,7 +480,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDUInt32,
@@ -503,7 +503,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDBaseDataType,
@@ -526,7 +526,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDUInt32,
@@ -549,7 +549,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDBaseDataType,
@@ -572,7 +572,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDBaseDataType,
@@ -595,7 +595,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDBaseDataType,
@@ -618,7 +618,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDBaseDataType,
@@ -641,7 +641,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDBaseDataType,
@@ -664,7 +664,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDBaseDataType,
@@ -687,7 +687,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDBaseDataType,
@@ -710,7 +710,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDBaseDataType,
@@ -733,7 +733,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDBaseDataType,
@@ -756,7 +756,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDBaseDataType,
@@ -779,7 +779,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDBaseDataType,
@@ -802,7 +802,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDBaseDataType,
@@ -825,7 +825,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDBaseDataType,
@@ -848,7 +848,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDBaseDataType,
@@ -871,7 +871,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDBaseDataType,
@@ -894,7 +894,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDBaseDataType,
@@ -917,7 +917,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDBaseDataType,
@@ -940,7 +940,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDBaseDataType,
@@ -963,7 +963,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDBaseDataType,
@@ -986,7 +986,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDBaseDataType,
@@ -1009,7 +1009,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDBaseDataType,
@@ -1032,7 +1032,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDBaseDataType,
@@ -1055,7 +1055,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDBaseDataType,
@@ -1078,7 +1078,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDBaseDataType,
@@ -1101,7 +1101,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDBaseDataType,
@@ -1124,7 +1124,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDBaseDataType,
@@ -1147,7 +1147,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDBaseDataType,
@@ -1170,7 +1170,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDBaseDataType,
@@ -1195,7 +1195,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDSessionSecurityDiagnosticsType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsObject.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsObject.GetNodeID())),
 			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(ua.VariableIDServerServerDiagnosticsSessionsDiagnosticsSummarySessionSecurityDiagnosticsArray)),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
@@ -1249,7 +1249,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionSecurityDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionSecurityDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDNodeID,
@@ -1292,7 +1292,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionSecurityDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionSecurityDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDString,
@@ -1335,7 +1335,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionSecurityDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionSecurityDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDString,
@@ -1378,7 +1378,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionSecurityDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionSecurityDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDString,
@@ -1421,7 +1421,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionSecurityDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionSecurityDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDString,
@@ -1464,7 +1464,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionSecurityDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionSecurityDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDString,
@@ -1507,7 +1507,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionSecurityDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionSecurityDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDMessageSecurityMode,
@@ -1550,7 +1550,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionSecurityDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionSecurityDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDString,
@@ -1593,7 +1593,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionSecurityDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionSecurityDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDByteString,
@@ -1638,7 +1638,7 @@ func (m *SessionManager) addDiagnosticsNode(s *Session) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDSubscriptionDiagnosticsArrayType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsObject.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(sessionDiagnosticsObject.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDSubscriptionDiagnosticsDataType,

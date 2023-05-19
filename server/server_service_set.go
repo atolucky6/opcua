@@ -19,13 +19,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/awcullen/opcua/ua"
+	"github.com/afs/server/pkg/opcua/ua"
 	"github.com/djherbis/buffer"
 	"github.com/google/uuid"
 )
 
 // FindServers returns the Servers known to a Server or Discovery Server.
-func (srv *Server) findServers(ch *serverSecureChannel, requestid uint32, req *ua.FindServersRequest) error {
+func (srv *UAServer) findServers(ch *serverSecureChannel, requestid uint32, req *ua.FindServersRequest) error {
 	srvs := make([]ua.ApplicationDescription, 0, 1)
 	for _, s := range []ua.ApplicationDescription{srv.LocalDescription()} {
 		if len(req.ServerURIs) > 0 {
@@ -53,7 +53,7 @@ func (srv *Server) findServers(ch *serverSecureChannel, requestid uint32, req *u
 }
 
 // GetEndpoints returns the endpoint descriptions supported by the server.
-func (srv *Server) getEndpoints(ch *serverSecureChannel, requestid uint32, req *ua.GetEndpointsRequest) error {
+func (srv *UAServer) getEndpoints(ch *serverSecureChannel, requestid uint32, req *ua.GetEndpointsRequest) error {
 	eps := make([]ua.EndpointDescription, 0, len(srv.Endpoints()))
 	for _, ep := range srv.Endpoints() {
 		if len(req.ProfileURIs) > 0 {
@@ -81,7 +81,7 @@ func (srv *Server) getEndpoints(ch *serverSecureChannel, requestid uint32, req *
 }
 
 // createSession creates a session.
-func (srv *Server) handleCreateSession(ch *serverSecureChannel, requestid uint32, req *ua.CreateSessionRequest) error {
+func (srv *UAServer) handleCreateSession(ch *serverSecureChannel, requestid uint32, req *ua.CreateSessionRequest) error {
 	// discovery only?
 	if ch.discoveryOnly {
 		ch.Abort(ua.BadSecurityPolicyRejected, "")
@@ -263,7 +263,7 @@ func (srv *Server) handleCreateSession(ch *serverSecureChannel, requestid uint32
 }
 
 // handleActivateSession activates a session.
-func (srv *Server) handleActivateSession(ch *serverSecureChannel, requestid uint32, req *ua.ActivateSessionRequest) error {
+func (srv *UAServer) handleActivateSession(ch *serverSecureChannel, requestid uint32, req *ua.ActivateSessionRequest) error {
 	// discovery only?
 	if ch.discoveryOnly {
 		ch.Abort(ua.BadSecurityPolicyRejected, "")
@@ -749,7 +749,7 @@ func (srv *Server) handleActivateSession(ch *serverSecureChannel, requestid uint
 }
 
 // closeSession closes a session.
-func (srv *Server) handleCloseSession(ch *serverSecureChannel, requestid uint32, req *ua.CloseSessionRequest) error {
+func (srv *UAServer) handleCloseSession(ch *serverSecureChannel, requestid uint32, req *ua.CloseSessionRequest) error {
 	// discovery only?
 	if ch.discoveryOnly {
 		ch.Abort(ua.BadSecurityPolicyRejected, "")
@@ -827,7 +827,7 @@ func (srv *Server) handleCloseSession(ch *serverSecureChannel, requestid uint32,
 }
 
 // handleCancel cancels a request.
-func (srv *Server) handleCancel(ch *serverSecureChannel, requestid uint32, req *ua.CancelRequest) error {
+func (srv *UAServer) handleCancel(ch *serverSecureChannel, requestid uint32, req *ua.CancelRequest) error {
 	// discovery only?
 	if ch.discoveryOnly {
 		ch.Abort(ua.BadSecurityPolicyRejected, "")
@@ -895,7 +895,7 @@ func (srv *Server) handleCancel(ch *serverSecureChannel, requestid uint32, req *
 // DeleteNodes deletes one or more Nodes from the AddressSpace.
 // DeleteReferences deletes one or more References of a Node.
 
-func (srv *Server) handleBrowse(ch *serverSecureChannel, requestid uint32, req *ua.BrowseRequest) error {
+func (srv *UAServer) handleBrowse(ch *serverSecureChannel, requestid uint32, req *ua.BrowseRequest) error {
 	// discovery only?
 	if ch.discoveryOnly {
 		ch.Abort(ua.BadSecurityPolicyRejected, "")
@@ -970,7 +970,7 @@ func (srv *Server) handleBrowse(ch *serverSecureChannel, requestid uint32, req *
 			session.errorCount++
 			return nil
 		}
-		if n.NodeClass() != ua.NodeClassView {
+		if n.GetNodeClass() != ua.NodeClassView {
 			ch.Write(
 				&ua.ServiceFault{
 					ResponseHeader: ua.ResponseHeader{
@@ -1044,7 +1044,7 @@ func (srv *Server) handleBrowse(ch *serverSecureChannel, requestid uint32, req *
 				wg.Done()
 				return
 			}
-			rp := node.UserRolePermissions(ctx)
+			rp := node.GetUserRolePermissions(ctx)
 			if !IsUserPermitted(rp, ua.PermissionTypeBrowse) {
 				results[i] = ua.BrowseResult{StatusCode: ua.BadNodeIDUnknown}
 				wg.Done()
@@ -1061,13 +1061,13 @@ func (srv *Server) handleBrowse(ch *serverSecureChannel, requestid uint32, req *
 					wg.Done()
 					return
 				}
-				if rt.NodeClass() != ua.NodeClassReferenceType {
+				if rt.GetNodeClass() != ua.NodeClassReferenceType {
 					results[i] = ua.BrowseResult{StatusCode: ua.BadReferenceTypeIDInvalid}
 					wg.Done()
 					return
 				}
 			}
-			refs := node.References()
+			refs := node.GetReferences()
 			rds := make([]ua.ReferenceDescription, 0, len(refs))
 			for _, r := range refs {
 				if !(both || r.IsInverse == isInverse) {
@@ -1082,11 +1082,11 @@ func (srv *Server) handleBrowse(ch *serverSecureChannel, requestid uint32, req *
 					wg.Done()
 					return
 				}
-				rp2 := t.UserRolePermissions(ctx)
+				rp2 := t.GetUserRolePermissions(ctx)
 				if !IsUserPermitted(rp2, ua.PermissionTypeBrowse) {
 					continue
 				}
-				if !(allClasses || d.NodeClassMask&uint32(t.NodeClass()) != 0) {
+				if !(allClasses || d.NodeClassMask&uint32(t.GetNodeClass()) != 0) {
 					continue
 				}
 				var rt ua.NodeID
@@ -1099,21 +1099,21 @@ func (srv *Server) handleBrowse(ch *serverSecureChannel, requestid uint32, req *
 				}
 				nc := ua.NodeClassUnspecified
 				if d.ResultMask&uint32(ua.BrowseResultMaskNodeClass) != 0 {
-					nc = t.NodeClass()
+					nc = t.GetNodeClass()
 				}
 				bn := ua.QualifiedName{}
 				if d.ResultMask&uint32(ua.BrowseResultMaskBrowseName) != 0 {
-					bn = t.BrowseName()
+					bn = t.GetBrowseName()
 				}
 				dn := ua.LocalizedText{}
 				if d.ResultMask&uint32(ua.BrowseResultMaskDisplayName) != 0 {
-					dn = t.DisplayName()
+					dn = t.GetDisplayName()
 				}
 				var td ua.ExpandedNodeID
 				if d.ResultMask&uint32(ua.BrowseResultMaskTypeDefinition) != 0 {
-					if nc := t.NodeClass(); nc == ua.NodeClassObject || nc == ua.NodeClassVariable {
+					if nc := t.GetNodeClass(); nc == ua.NodeClassObject || nc == ua.NodeClassVariable {
 						hasTypeDef := ua.ReferenceTypeIDHasTypeDefinition
-						for _, tr := range t.References() {
+						for _, tr := range t.GetReferences() {
 							if hasTypeDef == tr.ReferenceTypeID {
 								td = tr.TargetID
 								break
@@ -1173,7 +1173,7 @@ func (srv *Server) handleBrowse(ch *serverSecureChannel, requestid uint32, req *
 	return nil
 }
 
-func (srv *Server) handleBrowseNext(ch *serverSecureChannel, requestid uint32, req *ua.BrowseNextRequest) error {
+func (srv *UAServer) handleBrowseNext(ch *serverSecureChannel, requestid uint32, req *ua.BrowseNextRequest) error {
 	// discovery only?
 	if ch.discoveryOnly {
 		ch.Abort(ua.BadSecurityPolicyRejected, "")
@@ -1335,7 +1335,7 @@ func (srv *Server) handleBrowseNext(ch *serverSecureChannel, requestid uint32, r
 	return nil
 }
 
-func (srv *Server) handleTranslateBrowsePathsToNodeIds(ch *serverSecureChannel, requestid uint32, req *ua.TranslateBrowsePathsToNodeIDsRequest) error {
+func (srv *UAServer) handleTranslateBrowsePathsToNodeIds(ch *serverSecureChannel, requestid uint32, req *ua.TranslateBrowsePathsToNodeIDsRequest) error {
 	// discovery only?
 	if ch.discoveryOnly {
 		ch.Abort(ua.BadSecurityPolicyRejected, "")
@@ -1495,7 +1495,7 @@ func (srv *Server) handleTranslateBrowsePathsToNodeIds(ch *serverSecureChannel, 
 	return nil
 }
 
-func (srv *Server) handleRegisterNodes(ch *serverSecureChannel, requestid uint32, req *ua.RegisterNodesRequest) error {
+func (srv *UAServer) handleRegisterNodes(ch *serverSecureChannel, requestid uint32, req *ua.RegisterNodesRequest) error {
 	// discovery only?
 	if ch.discoveryOnly {
 		ch.Abort(ua.BadSecurityPolicyRejected, "")
@@ -1603,7 +1603,7 @@ func (srv *Server) handleRegisterNodes(ch *serverSecureChannel, requestid uint32
 	return nil
 }
 
-func (srv *Server) handleUnregisterNodes(ch *serverSecureChannel, requestid uint32, req *ua.UnregisterNodesRequest) error {
+func (srv *UAServer) handleUnregisterNodes(ch *serverSecureChannel, requestid uint32, req *ua.UnregisterNodesRequest) error {
 	// discovery only?
 	if ch.discoveryOnly {
 		ch.Abort(ua.BadSecurityPolicyRejected, "")
@@ -1705,7 +1705,7 @@ func (srv *Server) handleUnregisterNodes(ch *serverSecureChannel, requestid uint
 	return nil
 }
 
-func (srv *Server) follow(nodeID ua.NodeID, elements []ua.RelativePathElement) ([]ua.BrowsePathTarget, error) {
+func (srv *UAServer) follow(nodeID ua.NodeID, elements []ua.RelativePathElement) ([]ua.BrowsePathTarget, error) {
 	if len(elements) == 0 {
 		return nil, ua.BadNothingToDo
 	} else if len(elements) == 1 {
@@ -1732,7 +1732,7 @@ func (srv *Server) follow(nodeID ua.NodeID, elements []ua.RelativePathElement) (
 		copy(nextElements, elements[1:])
 		nextNode, ok := srv.NamespaceManager().FindNode(ua.ToNodeID(nextID, srv.NamespaceUris()))
 		if ok {
-			return srv.follow(nextNode.NodeID(), nextElements)
+			return srv.follow(nextNode.GetNodeID(), nextElements)
 		}
 		if len(nextElements) == 0 {
 			return []ua.BrowsePathTarget{
@@ -1746,7 +1746,7 @@ func (srv *Server) follow(nodeID ua.NodeID, elements []ua.RelativePathElement) (
 }
 
 // target returns a slice of target nodeid's that match the given RelativePathElement
-func (srv *Server) target(nodeID ua.NodeID, element ua.RelativePathElement) ([]ua.ExpandedNodeID, error) {
+func (srv *UAServer) target(nodeID ua.NodeID, element ua.RelativePathElement) ([]ua.ExpandedNodeID, error) {
 	referenceTypeID := element.ReferenceTypeID
 	includeSubtypes := element.IncludeSubtypes
 	isInverse := element.IsInverse
@@ -1756,7 +1756,7 @@ func (srv *Server) target(nodeID ua.NodeID, element ua.RelativePathElement) ([]u
 	if !ok {
 		return nil, ua.BadNodeIDUnknown
 	}
-	refs := node.References()
+	refs := node.GetReferences()
 	targets := make([]ua.ExpandedNodeID, 0, 4)
 	for _, r := range refs {
 		if !(r.IsInverse == isInverse) {
@@ -1769,7 +1769,7 @@ func (srv *Server) target(nodeID ua.NodeID, element ua.RelativePathElement) ([]u
 		if !ok {
 			continue
 		}
-		if !(targetName == t.BrowseName()) {
+		if !(targetName == t.GetBrowseName()) {
 			continue
 		}
 		targets = append(targets, r.TargetID)
@@ -1781,7 +1781,7 @@ func (srv *Server) target(nodeID ua.NodeID, element ua.RelativePathElement) ([]u
 }
 
 // Read returns a list of Node attributes.
-func (srv *Server) handleRead(ch *serverSecureChannel, requestid uint32, req *ua.ReadRequest) error {
+func (srv *UAServer) handleRead(ch *serverSecureChannel, requestid uint32, req *ua.ReadRequest) error {
 	// discovery only?
 	if ch.discoveryOnly {
 		ch.Abort(ua.BadSecurityPolicyRejected, "")
@@ -1937,7 +1937,7 @@ func (srv *Server) handleRead(ch *serverSecureChannel, requestid uint32, req *ua
 }
 
 // Write sets a list of Node attributes.
-func (srv *Server) handleWrite(ch *serverSecureChannel, requestid uint32, req *ua.WriteRequest) error {
+func (srv *UAServer) handleWrite(ch *serverSecureChannel, requestid uint32, req *ua.WriteRequest) error {
 	// discovery only?
 	if ch.discoveryOnly {
 		ch.Abort(ua.BadSecurityPolicyRejected, "")
@@ -2064,7 +2064,7 @@ func (srv *Server) handleWrite(ch *serverSecureChannel, requestid uint32, req *u
 }
 
 // HistoryRead returns a list of historical values.
-func (srv *Server) handleHistoryRead(ch *serverSecureChannel, requestid uint32, req *ua.HistoryReadRequest) error {
+func (srv *UAServer) handleHistoryRead(ch *serverSecureChannel, requestid uint32, req *ua.HistoryReadRequest) error {
 	// discovery only?
 	if ch.discoveryOnly {
 		ch.Abort(ua.BadSecurityPolicyRejected, "")
@@ -3123,7 +3123,7 @@ func selectTimestamps(values []ua.DataValue, timestampsToReturn ua.TimestampsToR
 }
 
 // Call invokes a list of Methods.
-func (srv *Server) handleCall(ch *serverSecureChannel, requestid uint32, req *ua.CallRequest) error {
+func (srv *UAServer) handleCall(ch *serverSecureChannel, requestid uint32, req *ua.CallRequest) error {
 	// discovery only?
 	if ch.discoveryOnly {
 		ch.Abort(ua.BadSecurityPolicyRejected, "")
@@ -3233,7 +3233,7 @@ func (srv *Server) handleCall(ch *serverSecureChannel, requestid uint32, req *ua
 				wg.Done()
 				return
 			}
-			rp := n1.UserRolePermissions(ctx)
+			rp := n1.GetUserRolePermissions(ctx)
 			if !IsUserPermitted(rp, ua.PermissionTypeBrowse) {
 				results[i] = ua.CallMethodResult{StatusCode: ua.BadNodeIDUnknown}
 				wg.Done()
@@ -3253,7 +3253,7 @@ func (srv *Server) handleCall(ch *serverSecureChannel, requestid uint32, req *ua
 				wg.Done()
 				return
 			}
-			rp = n2.UserRolePermissions(ctx)
+			rp = n2.GetUserRolePermissions(ctx)
 			if !IsUserPermitted(rp, ua.PermissionTypeBrowse) {
 				results[i] = ua.CallMethodResult{StatusCode: ua.BadNodeIDUnknown}
 				wg.Done()
@@ -3295,7 +3295,7 @@ func (srv *Server) handleCall(ch *serverSecureChannel, requestid uint32, req *ua
 }
 
 // CreateMonitoredItems creates and adds one or more MonitoredItems to a Subscription.
-func (srv *Server) handleCreateMonitoredItems(ch *serverSecureChannel, requestid uint32, req *ua.CreateMonitoredItemsRequest) error {
+func (srv *UAServer) handleCreateMonitoredItems(ch *serverSecureChannel, requestid uint32, req *ua.CreateMonitoredItemsRequest) error {
 	// discovery only?
 	if ch.discoveryOnly {
 		ch.Abort(ua.BadSecurityPolicyRejected, "")
@@ -3445,7 +3445,7 @@ func (srv *Server) handleCreateMonitoredItems(ch *serverSecureChannel, requestid
 				continue
 			}
 			// check AccessLevel
-			if (n2.AccessLevel() & ua.AccessLevelsCurrentRead) == 0 {
+			if (n2.GetAccessLevel() & ua.AccessLevelsCurrentRead) == 0 {
 				results[i] = ua.MonitoredItemCreateResult{StatusCode: ua.BadNotReadable}
 				continue
 			}
@@ -3453,7 +3453,7 @@ func (srv *Server) handleCreateMonitoredItems(ch *serverSecureChannel, requestid
 				results[i] = ua.MonitoredItemCreateResult{StatusCode: ua.BadUserAccessDenied}
 				continue
 			}
-			if sc := srv.validateIndexRange(ctx, item.ItemToMonitor.IndexRange, n2.DataType(), n2.ValueRank()); sc != ua.Good {
+			if sc := srv.validateIndexRange(ctx, item.ItemToMonitor.IndexRange, n2.GetDataType(), n2.GetValueRank()); sc != ua.Good {
 				results[i] = ua.MonitoredItemCreateResult{StatusCode: sc}
 				continue
 			}
@@ -3466,7 +3466,7 @@ func (srv *Server) handleCreateMonitoredItems(ch *serverSecureChannel, requestid
 				continue
 			}
 			if dcf.DeadbandType != uint32(ua.DeadbandTypeNone) {
-				destType := srv.NamespaceManager().FindVariantType(n2.DataType())
+				destType := srv.NamespaceManager().FindVariantType(n2.GetDataType())
 				switch destType {
 				case ua.VariantTypeByte, ua.VariantTypeSByte:
 				case ua.VariantTypeInt16, ua.VariantTypeInt32, ua.VariantTypeInt64:
@@ -3496,7 +3496,7 @@ func (srv *Server) handleCreateMonitoredItems(ch *serverSecureChannel, requestid
 				results[i] = ua.MonitoredItemCreateResult{StatusCode: ua.BadNotReadable}
 				continue
 			}
-			rp := n2.UserRolePermissions(ctx)
+			rp := n2.GetUserRolePermissions(ctx)
 			if !IsUserPermitted(rp, ua.PermissionTypeReceiveEvents) {
 				results[i] = ua.MonitoredItemCreateResult{StatusCode: ua.BadUserAccessDenied}
 				continue
@@ -3515,7 +3515,7 @@ func (srv *Server) handleCreateMonitoredItems(ch *serverSecureChannel, requestid
 			}
 			continue
 		default:
-			rp := n.UserRolePermissions(ctx)
+			rp := n.GetUserRolePermissions(ctx)
 			if !IsUserPermitted(rp, ua.PermissionTypeBrowse) {
 				results[i] = ua.MonitoredItemCreateResult{StatusCode: ua.BadAttributeIDInvalid}
 				continue
@@ -3549,7 +3549,7 @@ func (srv *Server) handleCreateMonitoredItems(ch *serverSecureChannel, requestid
 }
 
 // ModifyMonitoredItems modifies MonitoredItems of a Subscription.
-func (srv *Server) handleModifyMonitoredItems(ch *serverSecureChannel, requestid uint32, req *ua.ModifyMonitoredItemsRequest) error {
+func (srv *UAServer) handleModifyMonitoredItems(ch *serverSecureChannel, requestid uint32, req *ua.ModifyMonitoredItemsRequest) error {
 	// discovery only?
 	if ch.discoveryOnly {
 		ch.Abort(ua.BadSecurityPolicyRejected, "")
@@ -3694,7 +3694,7 @@ func (srv *Server) handleModifyMonitoredItems(ch *serverSecureChannel, requestid
 					continue
 				}
 				if dcf.DeadbandType != uint32(ua.DeadbandTypeNone) {
-					destType := srv.NamespaceManager().FindVariantType(item.node.(*VariableNode).DataType())
+					destType := srv.NamespaceManager().FindVariantType(item.node.(*VariableNode).GetDataType())
 					switch destType {
 					case ua.VariantTypeByte, ua.VariantTypeSByte:
 					case ua.VariantTypeInt16, ua.VariantTypeInt32, ua.VariantTypeInt64:
@@ -3745,7 +3745,7 @@ func (srv *Server) handleModifyMonitoredItems(ch *serverSecureChannel, requestid
 }
 
 // SetMonitoringMode sets the monitoring mode for one or more MonitoredItems of a Subscription.
-func (srv *Server) handleSetMonitoringMode(ch *serverSecureChannel, requestid uint32, req *ua.SetMonitoringModeRequest) error {
+func (srv *UAServer) handleSetMonitoringMode(ch *serverSecureChannel, requestid uint32, req *ua.SetMonitoringModeRequest) error {
 	// discovery only?
 	if ch.discoveryOnly {
 		ch.Abort(ua.BadSecurityPolicyRejected, "")
@@ -3883,7 +3883,7 @@ func (srv *Server) handleSetMonitoringMode(ch *serverSecureChannel, requestid ui
 }
 
 // SetTriggering creates and deletes triggering links for a triggering item.
-func (srv *Server) handleSetTriggering(ch *serverSecureChannel, requestid uint32, req *ua.SetTriggeringRequest) error {
+func (srv *UAServer) handleSetTriggering(ch *serverSecureChannel, requestid uint32, req *ua.SetTriggeringRequest) error {
 	// discovery only?
 	if ch.discoveryOnly {
 		ch.Abort(ua.BadSecurityPolicyRejected, "")
@@ -4037,7 +4037,7 @@ func (srv *Server) handleSetTriggering(ch *serverSecureChannel, requestid uint32
 }
 
 // DeleteMonitoredItems removes one or more MonitoredItems of a Subscription.
-func (srv *Server) handleDeleteMonitoredItems(ch *serverSecureChannel, requestid uint32, req *ua.DeleteMonitoredItemsRequest) error {
+func (srv *UAServer) handleDeleteMonitoredItems(ch *serverSecureChannel, requestid uint32, req *ua.DeleteMonitoredItemsRequest) error {
 	// discovery only?
 	if ch.discoveryOnly {
 		ch.Abort(ua.BadSecurityPolicyRejected, "")
@@ -4172,7 +4172,7 @@ func (srv *Server) handleDeleteMonitoredItems(ch *serverSecureChannel, requestid
 	return nil
 }
 
-func (srv *Server) validateIndexRange(ctx context.Context, s string, dataType ua.NodeID, rank int32) ua.StatusCode {
+func (srv *UAServer) validateIndexRange(ctx context.Context, s string, dataType ua.NodeID, rank int32) ua.StatusCode {
 	lo := int64(-1)
 	hi := int64(-1)
 	var err error
@@ -4239,7 +4239,7 @@ func (srv *Server) validateIndexRange(ctx context.Context, s string, dataType ua
 }
 
 // CreateSubscription creates a Subscription.
-func (srv *Server) handleCreateSubscription(ch *serverSecureChannel, requestid uint32, req *ua.CreateSubscriptionRequest) error {
+func (srv *UAServer) handleCreateSubscription(ch *serverSecureChannel, requestid uint32, req *ua.CreateSubscriptionRequest) error {
 	// discovery only?
 	if ch.discoveryOnly {
 		ch.Abort(ua.BadSecurityPolicyRejected, "")
@@ -4333,7 +4333,7 @@ func (srv *Server) handleCreateSubscription(ch *serverSecureChannel, requestid u
 }
 
 // ModifySubscription modifies a Subscription.
-func (srv *Server) handleModifySubscription(ch *serverSecureChannel, requestid uint32, req *ua.ModifySubscriptionRequest) error {
+func (srv *UAServer) handleModifySubscription(ch *serverSecureChannel, requestid uint32, req *ua.ModifySubscriptionRequest) error {
 	// discovery only?
 	if ch.discoveryOnly {
 		ch.Abort(ua.BadSecurityPolicyRejected, "")
@@ -4426,7 +4426,7 @@ func (srv *Server) handleModifySubscription(ch *serverSecureChannel, requestid u
 }
 
 // SetPublishingMode enables sending of Notifications on one or more Subscriptions.
-func (srv *Server) handleSetPublishingMode(ch *serverSecureChannel, requestid uint32, req *ua.SetPublishingModeRequest) error {
+func (srv *UAServer) handleSetPublishingMode(ch *serverSecureChannel, requestid uint32, req *ua.SetPublishingModeRequest) error {
 	// discovery only?
 	if ch.discoveryOnly {
 		ch.Abort(ua.BadSecurityPolicyRejected, "")
@@ -4510,7 +4510,7 @@ func (srv *Server) handleSetPublishingMode(ch *serverSecureChannel, requestid ui
 // TransferSubscriptions transfers a Subscription and its MonitoredItems from one Session to another.
 
 // DeleteSubscriptions deletes one or more Subscriptions.
-func (srv *Server) handleDeleteSubscriptions(ch *serverSecureChannel, requestid uint32, req *ua.DeleteSubscriptionsRequest) error {
+func (srv *UAServer) handleDeleteSubscriptions(ch *serverSecureChannel, requestid uint32, req *ua.DeleteSubscriptionsRequest) error {
 	// discovery only?
 	if ch.discoveryOnly {
 		ch.Abort(ua.BadSecurityPolicyRejected, "")
@@ -4627,7 +4627,7 @@ func (srv *Server) handleDeleteSubscriptions(ch *serverSecureChannel, requestid 
 }
 
 // Publish returns a NotificationMessage or a keep-alive Message.
-func (srv *Server) handlePublish(ch *serverSecureChannel, requestid uint32, req *ua.PublishRequest) error {
+func (srv *UAServer) handlePublish(ch *serverSecureChannel, requestid uint32, req *ua.PublishRequest) error {
 	// discovery only?
 	if ch.discoveryOnly {
 		ch.Abort(ua.BadSecurityPolicyRejected, "")
@@ -4766,7 +4766,7 @@ func (srv *Server) handlePublish(ch *serverSecureChannel, requestid uint32, req 
 }
 
 // Republish requests the Server to republish a NotificationMessage from its retransmission queue.
-func (srv *Server) handleRepublish(ch *serverSecureChannel, requestid uint32, req *ua.RepublishRequest) error {
+func (srv *UAServer) handleRepublish(ch *serverSecureChannel, requestid uint32, req *ua.RepublishRequest) error {
 	// discovery only?
 	if ch.discoveryOnly {
 		ch.Abort(ua.BadSecurityPolicyRejected, "")
@@ -4883,12 +4883,12 @@ func (srv *Server) handleRepublish(ch *serverSecureChannel, requestid uint32, re
 }
 
 // WriteValue writes the value of the attribute.
-func (srv *Server) writeValue(ctx context.Context, writeValue ua.WriteValue) ua.StatusCode {
+func (srv *UAServer) writeValue(ctx context.Context, writeValue ua.WriteValue) ua.StatusCode {
 	n, ok := srv.NamespaceManager().FindNode(writeValue.NodeID)
 	if !ok {
 		return ua.BadNodeIDUnknown
 	}
-	rp := n.UserRolePermissions(ctx)
+	rp := n.GetUserRolePermissions(ctx)
 	if !IsUserPermitted(rp, ua.PermissionTypeBrowse) {
 		return ua.BadNodeIDUnknown
 	}
@@ -4899,15 +4899,15 @@ func (srv *Server) writeValue(ctx context.Context, writeValue ua.WriteValue) ua.
 			// if writeValue.Value.StatusCode != Good || !time.Time.IsZero(writeValue.Value.ServerTimestamp) || !time.Time.IsZero(writeValue.Value.SourceTimestamp) {
 			// 	return ua.BadWriteNotSupported
 			// }
-			if (n1.AccessLevel() & ua.AccessLevelsCurrentWrite) == 0 {
+			if (n1.GetAccessLevel() & ua.AccessLevelsCurrentWrite) == 0 {
 				return ua.BadNotWritable
 			}
 			if (n1.UserAccessLevel(ctx) & ua.AccessLevelsCurrentWrite) == 0 {
 				return ua.BadUserAccessDenied
 			}
 			// check data type
-			destType := srv.NamespaceManager().FindVariantType(n1.DataType())
-			destRank := n1.ValueRank()
+			destType := srv.NamespaceManager().FindVariantType(n1.GetDataType())
+			destRank := n1.GetValueRank()
 			// special case convert bytestring to byte array
 			if destType == ua.VariantTypeByte && destRank == ua.ValueRankOneDimension {
 				if v1, ok := writeValue.Value.Value.(ua.ByteString); ok {
@@ -5325,14 +5325,14 @@ func (srv *Server) writeValue(ctx context.Context, writeValue ua.WriteValue) ua.
 				}
 			}
 
-			if f := n1.writeValueHandler; f != nil {
+			if f := n1.WriteValueHandler; f != nil {
 				result, status := f(ctx, writeValue)
 				if status == ua.Good {
 					n1.SetValue(result)
 				}
 				return status
 			} else {
-				result, status := writeRange(n1.Value(), writeValue.Value, writeValue.IndexRange)
+				result, status := writeRange(n1.GetValue(), writeValue.Value, writeValue.IndexRange)
 				if status == ua.Good {
 					n1.SetValue(result)
 				}
@@ -5363,7 +5363,7 @@ func (srv *Server) writeValue(ctx context.Context, writeValue ua.WriteValue) ua.
 }
 
 // readValue returns the value of the attribute.
-func (srv *Server) readValue(ctx context.Context, readValueId ua.ReadValueID) ua.DataValue {
+func (srv *UAServer) readValue(ctx context.Context, readValueId ua.ReadValueID) ua.DataValue {
 	if readValueId.DataEncoding.Name != "" {
 		return ua.NewDataValue(nil, ua.BadDataEncodingInvalid, time.Time{}, 0, time.Now(), 0)
 	}
@@ -5374,7 +5374,7 @@ func (srv *Server) readValue(ctx context.Context, readValueId ua.ReadValueID) ua
 	if !ok {
 		return ua.NewDataValue(nil, ua.BadNodeIDUnknown, time.Time{}, 0, time.Now(), 0)
 	}
-	rp := n.UserRolePermissions(ctx)
+	rp := n.GetUserRolePermissions(ctx)
 	if !IsUserPermitted(rp, ua.PermissionTypeBrowse) {
 		return ua.NewDataValue(nil, ua.BadNodeIDUnknown, time.Time{}, 0, time.Now(), 0)
 	}
@@ -5383,29 +5383,29 @@ func (srv *Server) readValue(ctx context.Context, readValueId ua.ReadValueID) ua
 		switch n1 := n.(type) {
 		case *VariableNode:
 			// check the access level for the variable.
-			if (n1.AccessLevel() & ua.AccessLevelsCurrentRead) == 0 {
+			if (n1.GetAccessLevel() & ua.AccessLevelsCurrentRead) == 0 {
 				return ua.NewDataValue(nil, ua.BadNotReadable, time.Time{}, 0, time.Now(), 0)
 			}
 			if (n1.UserAccessLevel(ctx) & ua.AccessLevelsCurrentRead) == 0 {
 				return ua.NewDataValue(nil, ua.BadUserAccessDenied, time.Time{}, 0, time.Now(), 0)
 			}
-			if f := n1.readValueHandler; f != nil {
+			if f := n1.ReadValueHandler; f != nil {
 				return f(ctx, readValueId)
 			}
-			return readRange(n1.Value(), readValueId.IndexRange)
+			return readRange(n1.GetValue(), readValueId.IndexRange)
 		default:
 			return ua.NewDataValue(nil, ua.BadAttributeIDInvalid, time.Time{}, 0, time.Now(), 0)
 		}
 	case ua.AttributeIDNodeID:
-		return ua.NewDataValue(n.NodeID(), ua.Good, time.Time{}, 0, time.Now(), 0)
+		return ua.NewDataValue(n.GetNodeID(), ua.Good, time.Time{}, 0, time.Now(), 0)
 	case ua.AttributeIDNodeClass:
-		return ua.NewDataValue(int32(n.NodeClass()), ua.Good, time.Time{}, 0, time.Now(), 0)
+		return ua.NewDataValue(int32(n.GetNodeClass()), ua.Good, time.Time{}, 0, time.Now(), 0)
 	case ua.AttributeIDBrowseName:
-		return ua.NewDataValue(n.BrowseName(), ua.Good, time.Time{}, 0, time.Now(), 0)
+		return ua.NewDataValue(n.GetBrowseName(), ua.Good, time.Time{}, 0, time.Now(), 0)
 	case ua.AttributeIDDisplayName:
-		return ua.NewDataValue(n.DisplayName(), ua.Good, time.Time{}, 0, time.Now(), 0)
+		return ua.NewDataValue(n.GetDisplayName(), ua.Good, time.Time{}, 0, time.Now(), 0)
 	case ua.AttributeIDDescription:
-		return ua.NewDataValue(n.Description(), ua.Good, time.Time{}, 0, time.Now(), 0)
+		return ua.NewDataValue(n.GetDescription(), ua.Good, time.Time{}, 0, time.Now(), 0)
 	case ua.AttributeIDIsAbstract:
 		switch n1 := n.(type) {
 		case *DataTypeNode:
@@ -5452,7 +5452,7 @@ func (srv *Server) readValue(ctx context.Context, readValueId ua.ReadValueID) ua
 	case ua.AttributeIDDataType:
 		switch n1 := n.(type) {
 		case *VariableNode:
-			return ua.NewDataValue(n1.DataType(), ua.Good, time.Time{}, 0, time.Now(), 0)
+			return ua.NewDataValue(n1.GetDataType(), ua.Good, time.Time{}, 0, time.Now(), 0)
 		case *VariableTypeNode:
 			return ua.NewDataValue(n1.DataType(), ua.Good, time.Time{}, 0, time.Now(), 0)
 		default:
@@ -5461,7 +5461,7 @@ func (srv *Server) readValue(ctx context.Context, readValueId ua.ReadValueID) ua
 	case ua.AttributeIDValueRank:
 		switch n1 := n.(type) {
 		case *VariableNode:
-			return ua.NewDataValue(n1.ValueRank(), ua.Good, time.Time{}, 0, time.Now(), 0)
+			return ua.NewDataValue(n1.GetValueRank(), ua.Good, time.Time{}, 0, time.Now(), 0)
 		case *VariableTypeNode:
 			return ua.NewDataValue(n1.ValueRank(), ua.Good, time.Time{}, 0, time.Now(), 0)
 		default:
@@ -5470,7 +5470,7 @@ func (srv *Server) readValue(ctx context.Context, readValueId ua.ReadValueID) ua
 	case ua.AttributeIDArrayDimensions:
 		switch n1 := n.(type) {
 		case *VariableNode:
-			return ua.NewDataValue(n1.ArrayDimensions(), ua.Good, time.Time{}, 0, time.Now(), 0)
+			return ua.NewDataValue(n1.GetArrayDimensions(), ua.Good, time.Time{}, 0, time.Now(), 0)
 		case *VariableTypeNode:
 			return ua.NewDataValue(n1.ArrayDimensions(), ua.Good, time.Time{}, 0, time.Now(), 0)
 		default:
@@ -5479,7 +5479,7 @@ func (srv *Server) readValue(ctx context.Context, readValueId ua.ReadValueID) ua
 	case ua.AttributeIDAccessLevel:
 		switch n1 := n.(type) {
 		case *VariableNode:
-			return ua.NewDataValue(n1.AccessLevel(), ua.Good, time.Time{}, 0, time.Now(), 0)
+			return ua.NewDataValue(n1.GetAccessLevel(), ua.Good, time.Time{}, 0, time.Now(), 0)
 		default:
 			return ua.NewDataValue(nil, ua.BadAttributeIDInvalid, time.Time{}, 0, time.Now(), 0)
 		}
@@ -5493,14 +5493,14 @@ func (srv *Server) readValue(ctx context.Context, readValueId ua.ReadValueID) ua
 	case ua.AttributeIDMinimumSamplingInterval:
 		switch n1 := n.(type) {
 		case *VariableNode:
-			return ua.NewDataValue(n1.MinimumSamplingInterval(), ua.Good, time.Time{}, 0, time.Now(), 0)
+			return ua.NewDataValue(n1.GetMinimumSamplingInterval(), ua.Good, time.Time{}, 0, time.Now(), 0)
 		default:
 			return ua.NewDataValue(nil, ua.BadAttributeIDInvalid, time.Time{}, 0, time.Now(), 0)
 		}
 	case ua.AttributeIDHistorizing:
 		switch n1 := n.(type) {
 		case *VariableNode:
-			return ua.NewDataValue(n1.Historizing(), ua.Good, time.Time{}, 0, time.Now(), 0)
+			return ua.NewDataValue(n1.GetHistorizing(), ua.Good, time.Time{}, 0, time.Now(), 0)
 		default:
 			return ua.NewDataValue(nil, ua.BadAttributeIDInvalid, time.Time{}, 0, time.Now(), 0)
 		}
@@ -5532,14 +5532,14 @@ func (srv *Server) readValue(ctx context.Context, readValueId ua.ReadValueID) ua
 		if !IsUserPermitted(rp, ua.PermissionTypeReadRolePermissions) {
 			return ua.NewDataValue(nil, ua.BadAttributeIDInvalid, time.Time{}, 0, time.Now(), 0)
 		}
-		s1 := n.RolePermissions()
+		s1 := n.GetRolePermissions()
 		s2 := make([]ua.ExtensionObject, len(s1))
 		for i := range s1 {
 			s2[i] = s1[i]
 		}
 		return ua.NewDataValue(s2, ua.Good, time.Time{}, 0, time.Now(), 0)
 	case ua.AttributeIDUserRolePermissions:
-		s1 := n.UserRolePermissions(ctx)
+		s1 := n.GetUserRolePermissions(ctx)
 		s2 := make([]ua.ExtensionObject, len(s1))
 		for i := range s1 {
 			s2[i] = s1[i]

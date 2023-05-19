@@ -1,6 +1,6 @@
 package server
 
-import "github.com/awcullen/opcua/ua"
+import "github.com/afs/server/pkg/opcua/ua"
 
 // UserNameIdentityAuthenticator authenticates UserNameIdentity.
 type UserNameIdentityAuthenticator interface {

@@ -24,7 +24,7 @@ type Scheduler struct {
 	minSamplingInterval time.Duration
 }
 
-func NewScheduler(server *Server) *Scheduler {
+func NewScheduler(server *UAServer) *Scheduler {
 	s := &Scheduler{sync.Mutex{}, server.closing, make(map[time.Duration]*PollGroup), time.Duration(server.ServerCapabilities().MinSupportedSampleRate) * time.Millisecond}
 	return s
 }

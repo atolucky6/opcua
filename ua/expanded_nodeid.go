@@ -3,24 +3,111 @@
 package ua
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/google/uuid"
+	"github.com/karlseguin/jsonwriter"
+	"github.com/tidwall/gjson"
 )
 
 // ExpandedNodeID identifies a remote Node.
 type ExpandedNodeID struct {
-	ServerIndex  uint32
-	NamespaceURI string
-	NodeID       NodeID
+	IdType       IDType `json:"idType"`
+	ServerIndex  uint32 `json:"serverUri,omitempty"`
+	NamespaceURI string `json:"namespace,omitempty"`
+	NodeID       NodeID `json:"id"`
 }
 
 func NewExpandedNodeID(nodeID NodeID) ExpandedNodeID {
-	return ExpandedNodeID{0, "", nodeID}
+	return ExpandedNodeID{nodeID.GetIDType(), 0, "", nodeID}
+}
+
+func (eni *ExpandedNodeID) UnmarshalJSON(b []byte) error {
+	jeIdType := gjson.GetBytes(b, "idType")
+	eni.IdType = IDType(int32(jeIdType.Int()))
+
+	jeNamespace := gjson.GetBytes(b, "namespace")
+	eni.NamespaceURI = jeNamespace.Raw
+
+	jeServerUri := gjson.GetBytes(b, "serverUri")
+	eni.ServerIndex = uint32(jeServerUri.Uint())
+
+	jeId := gjson.GetBytes(b, "id")
+	switch eni.IdType {
+	case IDTypeNumeric:
+		var id uint32
+		err := json.Unmarshal([]byte(jeId.Raw), &id)
+		if err != nil {
+			return err
+		}
+		eni.NodeID = NodeIDNumeric{
+			NamespaceIndex: uint16(jeNamespace.Uint()),
+			IDType:         eni.IdType,
+			ID:             id,
+		}
+	case IDTypeString:
+		var id string
+		err := json.Unmarshal([]byte(jeId.Raw), &id)
+		if err != nil {
+			return err
+		}
+		eni.NodeID = NodeIDString{
+			NamespaceIndex: uint16(jeNamespace.Uint()),
+			IDType:         eni.IdType,
+			ID:             id,
+		}
+	case IDTypeGUID:
+		var id uuid.UUID
+		err := json.Unmarshal([]byte(jeId.Raw), &id)
+		if err != nil {
+			return err
+		}
+		eni.NodeID = NodeIDGUID{
+			NamespaceIndex: uint16(jeNamespace.Uint()),
+			IDType:         eni.IdType,
+			ID:             id,
+		}
+	case IDTypeOpaque:
+		var id string
+		err := json.Unmarshal([]byte(jeId.Raw), &id)
+		if err != nil {
+			return err
+		}
+		eni.NodeID = NodeIDOpaque{
+			NamespaceIndex: uint16(jeNamespace.Uint()),
+			IDType:         eni.IdType,
+			ID:             ByteString(id),
+		}
+	}
+	return nil
+}
+
+func (eni ExpandedNodeID) MarshalJSON() ([]byte, error) {
+	buffer := new(bytes.Buffer)
+	writer := jsonwriter.New(buffer)
+	writer.RootObject(func() {
+		if eni.IdType != 0 {
+			writer.KeyValue("idType", int32(eni.IdType))
+		}
+		writer.KeyValue("id", eni.NodeID.GetID())
+
+		if len(eni.NamespaceURI) > 0 {
+			writer.KeyValue("namespace", eni.NamespaceURI)
+		}
+
+		if eni.ServerIndex != 0 {
+			writer.KeyValue("serverUri", eni.ServerIndex)
+		}
+	})
+	return buffer.Bytes(), nil
 }
 
 // NilExpandedNodeID is the nil value.
-var NilExpandedNodeID = ExpandedNodeID{0, "", nil}
+var NilExpandedNodeID = ExpandedNodeID{IDTypeNumeric, 0, "", nil}
 
 // ParseExpandedNodeID returns a NodeID from a string representation.
 //   - ParseExpandedNodeID("i=85") // integer, assumes nsu=http://opcfoundation.org/UA/
@@ -53,8 +140,8 @@ func ParseExpandedNodeID(s string) ExpandedNodeID {
 		nsu = s[4:pos]
 		s = s[pos+1:]
 	}
-
-	return ExpandedNodeID{uint32(svr), nsu, ParseNodeID(s)}
+	nodeId := ParseNodeID(s)
+	return ExpandedNodeID{nodeId.GetIDType(), uint32(svr), nsu, nodeId}
 }
 
 // String returns a string representation of the ExpandedNodeID, e.g. "nsu=http://www.unifiedautomation.com/DemoServer/;s=Demo"
@@ -100,13 +187,13 @@ func ToNodeID(n ExpandedNodeID, namespaceURIs []string) NodeID {
 	}
 	switch n2 := n.NodeID.(type) {
 	case NodeIDNumeric:
-		return NodeIDNumeric{ns, n2.ID}
+		return NewNodeIDNumeric(ns, n2.ID)
 	case NodeIDString:
-		return NodeIDString{ns, n2.ID}
+		return NewNodeIDString(ns, n2.ID)
 	case NodeIDGUID:
-		return NodeIDGUID{ns, n2.ID}
+		return NewNodeIDGUID(ns, n2.ID)
 	case NodeIDOpaque:
-		return NodeIDOpaque{ns, n2.ID}
+		return NewNodeIDOpaque(ns, n2.ID)
 	default:
 		return nil
 	}

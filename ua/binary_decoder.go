@@ -693,7 +693,7 @@ func (dec *BinaryDecoder) ReadExpandedNodeID(value *ExpandedNodeID) error {
 			return BadDecodingError
 		}
 	}
-	*value = ExpandedNodeID{svr, nsu, n}
+	*value = ExpandedNodeID{n.GetIDType(), svr, nsu, n}
 	return nil
 }
 

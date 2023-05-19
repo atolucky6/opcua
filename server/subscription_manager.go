@@ -7,19 +7,19 @@ import (
 	"sync"
 	"time"
 
-	"github.com/awcullen/opcua/ua"
+	"github.com/afs/server/pkg/opcua/ua"
 	"github.com/google/uuid"
 )
 
 // SubscriptionManager manages the subscriptions for a server.
 type SubscriptionManager struct {
 	sync.RWMutex
-	server            *Server
+	server            *UAServer
 	subscriptionsByID map[uint32]*Subscription
 }
 
 // NewSubscriptionManager instantiates a new SubscriptionManager.
-func NewSubscriptionManager(server *Server) *SubscriptionManager {
+func NewSubscriptionManager(server *UAServer) *SubscriptionManager {
 	m := &SubscriptionManager{server: server, subscriptionsByID: make(map[uint32]*Subscription)}
 	go func(m *SubscriptionManager) {
 		ticker := time.NewTicker(60 * time.Second)
@@ -132,7 +132,7 @@ func (m *SubscriptionManager) addDiagnosticsNode(s *Subscription) {
 	}
 	if n1, ok := nm.FindNode(s.sessionId); ok {
 		if n2, ok := nm.FindComponent(n1, ua.NewQualifiedName(0, "SubscriptionDiagnosticsArray")); ok {
-			refs = append(refs, ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(n2.NodeID())))
+			refs = append(refs, ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(n2.GetNodeID())))
 		}
 	}
 	subscriptionDiagnosticsVariable := NewVariableNode(
@@ -155,38 +155,38 @@ func (m *SubscriptionManager) addDiagnosticsNode(s *Subscription) {
 		s.RLock()
 		defer s.RUnlock()
 		dv := ua.NewDataValue(ua.SubscriptionDiagnosticsDataType{
-				SessionID:                  s.sessionId,
-				SubscriptionID:             s.id,
-				Priority:                   s.priority,
-				PublishingInterval:         s.publishingInterval,
-				MaxKeepAliveCount:          s.maxKeepAliveCount,
-				MaxLifetimeCount:           s.lifetimeCount,
-				MaxNotificationsPerPublish: s.maxNotificationsPerPublish,
-				PublishingEnabled:          s.publishingEnabled,
-				ModifyCount:                s.modifyCount,
-				// EnableCount:                  uint32(0),
-				// DisableCount:                 uint32(0),
-				RepublishRequestCount:        s.republishRequestCount,
-				RepublishMessageRequestCount: s.republishMessageRequestCount,
-				RepublishMessageCount:        s.republishMessageCount,
-				// TransferRequestCount:         uint32(0),
-				// TransferredToAltClientCount:  uint32(0),
-				// TransferredToSameClientCount: uint32(0),
-				PublishRequestCount:          s.publishRequestCount,
-				DataChangeNotificationsCount: s.dataChangeNotificationsCount,
-				EventNotificationsCount:      s.eventNotificationsCount,
-				NotificationsCount:           s.notificationsCount,
-				LatePublishRequestCount:      s.latePublishRequestCount,
-				CurrentKeepAliveCount:        s.keepAliveCounter,
-				CurrentLifetimeCount:         s.lifetimeCounter,
-				UnacknowledgedMessageCount:   s.unacknowledgedMessageCount,
-				// DiscardedMessageCount:        uint32(0),
-				MonitoredItemCount:           s.monitoredItemCount,
-				DisabledMonitoredItemCount:   s.disabledMonitoredItemCount,
-				MonitoringQueueOverflowCount: s.monitoringQueueOverflowCount,
-				NextSequenceNumber:           s.seqNum,
-				// EventQueueOverFlowCount:      uint32(0),
-			}, 0, time.Now(), 0, time.Now(), 0)
+			SessionID:                  s.sessionId,
+			SubscriptionID:             s.id,
+			Priority:                   s.priority,
+			PublishingInterval:         s.publishingInterval,
+			MaxKeepAliveCount:          s.maxKeepAliveCount,
+			MaxLifetimeCount:           s.lifetimeCount,
+			MaxNotificationsPerPublish: s.maxNotificationsPerPublish,
+			PublishingEnabled:          s.publishingEnabled,
+			ModifyCount:                s.modifyCount,
+			// EnableCount:                  uint32(0),
+			// DisableCount:                 uint32(0),
+			RepublishRequestCount:        s.republishRequestCount,
+			RepublishMessageRequestCount: s.republishMessageRequestCount,
+			RepublishMessageCount:        s.republishMessageCount,
+			// TransferRequestCount:         uint32(0),
+			// TransferredToAltClientCount:  uint32(0),
+			// TransferredToSameClientCount: uint32(0),
+			PublishRequestCount:          s.publishRequestCount,
+			DataChangeNotificationsCount: s.dataChangeNotificationsCount,
+			EventNotificationsCount:      s.eventNotificationsCount,
+			NotificationsCount:           s.notificationsCount,
+			LatePublishRequestCount:      s.latePublishRequestCount,
+			CurrentKeepAliveCount:        s.keepAliveCounter,
+			CurrentLifetimeCount:         s.lifetimeCounter,
+			UnacknowledgedMessageCount:   s.unacknowledgedMessageCount,
+			// DiscardedMessageCount:        uint32(0),
+			MonitoredItemCount:           s.monitoredItemCount,
+			DisabledMonitoredItemCount:   s.disabledMonitoredItemCount,
+			MonitoringQueueOverflowCount: s.monitoringQueueOverflowCount,
+			NextSequenceNumber:           s.seqNum,
+			// EventQueueOverFlowCount:      uint32(0),
+		}, 0, time.Now(), 0, time.Now(), 0)
 		return dv
 	})
 	nodes = append(nodes, subscriptionDiagnosticsVariable)
@@ -198,7 +198,7 @@ func (m *SubscriptionManager) addDiagnosticsNode(s *Subscription) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDNodeID,
@@ -222,7 +222,7 @@ func (m *SubscriptionManager) addDiagnosticsNode(s *Subscription) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDUInt32,
@@ -245,7 +245,7 @@ func (m *SubscriptionManager) addDiagnosticsNode(s *Subscription) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDByte,
@@ -268,7 +268,7 @@ func (m *SubscriptionManager) addDiagnosticsNode(s *Subscription) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDDouble,
@@ -291,7 +291,7 @@ func (m *SubscriptionManager) addDiagnosticsNode(s *Subscription) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDUInt32,
@@ -314,7 +314,7 @@ func (m *SubscriptionManager) addDiagnosticsNode(s *Subscription) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDUInt32,
@@ -337,7 +337,7 @@ func (m *SubscriptionManager) addDiagnosticsNode(s *Subscription) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDUInt32,
@@ -360,7 +360,7 @@ func (m *SubscriptionManager) addDiagnosticsNode(s *Subscription) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDBoolean,
@@ -383,7 +383,7 @@ func (m *SubscriptionManager) addDiagnosticsNode(s *Subscription) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDUInt32,
@@ -406,7 +406,7 @@ func (m *SubscriptionManager) addDiagnosticsNode(s *Subscription) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDUInt32,
@@ -429,7 +429,7 @@ func (m *SubscriptionManager) addDiagnosticsNode(s *Subscription) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDUInt32,
@@ -452,7 +452,7 @@ func (m *SubscriptionManager) addDiagnosticsNode(s *Subscription) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDUInt32,
@@ -475,7 +475,7 @@ func (m *SubscriptionManager) addDiagnosticsNode(s *Subscription) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDUInt32,
@@ -498,7 +498,7 @@ func (m *SubscriptionManager) addDiagnosticsNode(s *Subscription) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDUInt32,
@@ -521,7 +521,7 @@ func (m *SubscriptionManager) addDiagnosticsNode(s *Subscription) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDUInt32,
@@ -544,7 +544,7 @@ func (m *SubscriptionManager) addDiagnosticsNode(s *Subscription) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDUInt32,
@@ -567,7 +567,7 @@ func (m *SubscriptionManager) addDiagnosticsNode(s *Subscription) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDUInt32,
@@ -590,7 +590,7 @@ func (m *SubscriptionManager) addDiagnosticsNode(s *Subscription) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDUInt32,
@@ -613,7 +613,7 @@ func (m *SubscriptionManager) addDiagnosticsNode(s *Subscription) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDUInt32,
@@ -636,7 +636,7 @@ func (m *SubscriptionManager) addDiagnosticsNode(s *Subscription) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDUInt32,
@@ -659,7 +659,7 @@ func (m *SubscriptionManager) addDiagnosticsNode(s *Subscription) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDUInt32,
@@ -682,7 +682,7 @@ func (m *SubscriptionManager) addDiagnosticsNode(s *Subscription) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDUInt32,
@@ -705,7 +705,7 @@ func (m *SubscriptionManager) addDiagnosticsNode(s *Subscription) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDUInt32,
@@ -728,7 +728,7 @@ func (m *SubscriptionManager) addDiagnosticsNode(s *Subscription) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDUInt32,
@@ -751,7 +751,7 @@ func (m *SubscriptionManager) addDiagnosticsNode(s *Subscription) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDUInt32,
@@ -774,7 +774,7 @@ func (m *SubscriptionManager) addDiagnosticsNode(s *Subscription) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDUInt32,
@@ -797,7 +797,7 @@ func (m *SubscriptionManager) addDiagnosticsNode(s *Subscription) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDUInt32,
@@ -820,7 +820,7 @@ func (m *SubscriptionManager) addDiagnosticsNode(s *Subscription) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDUInt32,
@@ -843,7 +843,7 @@ func (m *SubscriptionManager) addDiagnosticsNode(s *Subscription) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDUInt32,
@@ -866,7 +866,7 @@ func (m *SubscriptionManager) addDiagnosticsNode(s *Subscription) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDUInt32,
@@ -889,7 +889,7 @@ func (m *SubscriptionManager) addDiagnosticsNode(s *Subscription) {
 		nil,
 		[]ua.Reference{
 			ua.NewReference(ua.ReferenceTypeIDHasTypeDefinition, false, ua.NewExpandedNodeID(ua.VariableTypeIDBaseDataVariableType)),
-			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.NodeID())),
+			ua.NewReference(ua.ReferenceTypeIDHasComponent, true, ua.NewExpandedNodeID(subscriptionDiagnosticsVariable.GetNodeID())),
 		},
 		ua.NewDataValue(nil, ua.BadWaitingForInitialData, time.Now(), 0, time.Now(), 0),
 		ua.DataTypeIDUInt32,

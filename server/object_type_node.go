@@ -6,7 +6,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/awcullen/opcua/ua"
+	"github.com/afs/server/pkg/opcua/ua"
 )
 
 // ObjectTypeNode ...
@@ -41,44 +41,44 @@ func NewObjectTypeNode(nodeID ua.NodeID, browseName ua.QualifiedName, displayNam
 }
 
 // NodeID returns the NodeID attribute of this node.
-func (n *ObjectTypeNode) NodeID() ua.NodeID {
+func (n *ObjectTypeNode) GetNodeID() ua.NodeID {
 	return n.nodeID
 }
 
 // NodeClass returns the NodeClass attribute of this node.
-func (n *ObjectTypeNode) NodeClass() ua.NodeClass {
+func (n *ObjectTypeNode) GetNodeClass() ua.NodeClass {
 	return n.nodeClass
 }
 
 // BrowseName returns the BrowseName attribute of this node.
-func (n *ObjectTypeNode) BrowseName() ua.QualifiedName {
+func (n *ObjectTypeNode) GetBrowseName() ua.QualifiedName {
 	return n.browseName
 }
 
 // DisplayName returns the DisplayName attribute of this node.
-func (n *ObjectTypeNode) DisplayName() ua.LocalizedText {
+func (n *ObjectTypeNode) GetDisplayName() ua.LocalizedText {
 	return n.displayName
 }
 
 // Description returns the Description attribute of this node.
-func (n *ObjectTypeNode) Description() ua.LocalizedText {
+func (n *ObjectTypeNode) GetDescription() ua.LocalizedText {
 	return n.description
 }
 
 // RolePermissions returns the RolePermissions attribute of this node.
-func (n *ObjectTypeNode) RolePermissions() []ua.RolePermissionType {
+func (n *ObjectTypeNode) GetRolePermissions() []ua.RolePermissionType {
 	return n.rolePermissions
 }
 
 // UserRolePermissions returns the RolePermissions attribute of this node for the current user.
-func (n *ObjectTypeNode) UserRolePermissions(ctx context.Context) []ua.RolePermissionType {
+func (n *ObjectTypeNode) GetUserRolePermissions(ctx context.Context) []ua.RolePermissionType {
 	filteredPermissions := []ua.RolePermissionType{}
 	session, ok := ctx.Value(SessionKey).(*Session)
 	if !ok {
 		return filteredPermissions
 	}
 	roles := session.UserRoles()
-	rolePermissions := n.RolePermissions()
+	rolePermissions := n.GetRolePermissions()
 	if rolePermissions == nil {
 		rolePermissions = session.Server().RolePermissions()
 	}
@@ -93,7 +93,7 @@ func (n *ObjectTypeNode) UserRolePermissions(ctx context.Context) []ua.RolePermi
 }
 
 // References returns the References of this node.
-func (n *ObjectTypeNode) References() []ua.Reference {
+func (n *ObjectTypeNode) GetReferences() []ua.Reference {
 	n.RLock()
 	res := n.references
 	n.RUnlock()

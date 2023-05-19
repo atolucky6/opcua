@@ -5,7 +5,7 @@ package server
 import (
 	"context"
 
-	"github.com/awcullen/opcua/ua"
+	"github.com/afs/server/pkg/opcua/ua"
 )
 
 // HistoryReadWriter provides methods to read and write historical data.

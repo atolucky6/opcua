@@ -6,7 +6,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/awcullen/opcua/ua"
+	"github.com/afs/server/pkg/opcua/ua"
 )
 
 type publishOp struct {
@@ -23,7 +23,7 @@ type stateChangeOp struct {
 
 type Session struct {
 	sync.RWMutex
-	server              *Server
+	server              *UAServer
 	sessionId           ua.NodeID
 	sessionName         string
 	authenticationToken ua.NodeID
@@ -113,7 +113,7 @@ type Session struct {
 	clientUserIdHistory                     []string
 }
 
-func NewSession(server *Server, sessionId ua.NodeID, sessionName string, authenticationToken ua.NodeID, sessionNonce ua.ByteString, timeout time.Duration, clientDescription ua.ApplicationDescription, serverUri string, endpointUrl string, maxResponseMessageSize uint32) *Session {
+func NewSession(server *UAServer, sessionId ua.NodeID, sessionName string, authenticationToken ua.NodeID, sessionNonce ua.ByteString, timeout time.Duration, clientDescription ua.ApplicationDescription, serverUri string, endpointUrl string, maxResponseMessageSize uint32) *Session {
 	return &Session{
 		server:              server,
 		sessionId:           sessionId,
@@ -169,7 +169,7 @@ func (s *Session) delete() {
 	s.Unlock()
 }
 
-func (s *Session) Server() *Server {
+func (s *Session) Server() *UAServer {
 	s.RLock()
 	res := s.server
 	s.RUnlock()

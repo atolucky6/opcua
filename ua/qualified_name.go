@@ -3,9 +3,19 @@
 package ua
 
 import (
+	"bytes"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/karlseguin/jsonwriter"
+	"github.com/tidwall/gjson"
+)
+
+var (
+	errFieldNameNotFound = errors.New("field 'name' not found")
 )
 
 // QualifiedName pairs a name and a namespace index.
@@ -53,6 +63,37 @@ func (a QualifiedName) String() string {
 	return fmt.Sprintf("%d:%s", a.NamespaceIndex, a.Name)
 }
 
-func (a QualifiedName) MarshalText() ([]byte, error) {
-	return []byte(a.String()), nil
+func (n QualifiedName) MarshalJSON() ([]byte, error) {
+	buffer := new(bytes.Buffer)
+	writer := jsonwriter.New(buffer)
+	writer.RootObject(func() {
+		if n.NamespaceIndex != 0 {
+			writer.KeyValue("uri", n.NamespaceIndex)
+		}
+		writer.KeyString("name", n.Name)
+	})
+	return buffer.Bytes(), nil
+}
+
+func (n *QualifiedName) UnmarshalJSON(b []byte) error {
+	jeUri := gjson.GetBytes(b, "uri")
+	var uri uint16
+	if jeUri.Exists() {
+		err := json.Unmarshal([]byte(jeUri.Raw), &uri)
+		if err != nil {
+			return err
+		}
+	}
+	jeName := gjson.GetBytes(b, "name")
+	if !jeName.Exists() {
+		return errFieldNameNotFound
+	}
+	var name string
+	err := json.Unmarshal([]byte(jeName.Raw), &name)
+	if err != nil {
+		return err
+	}
+	n.NamespaceIndex = uri
+	n.Name = name
+	return nil
 }

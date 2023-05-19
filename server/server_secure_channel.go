@@ -23,7 +23,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/awcullen/opcua/ua"
+	"github.com/afs/server/pkg/opcua/ua"
 	"github.com/djherbis/buffer"
 )
 
@@ -40,7 +40,7 @@ var (
 // serverSecureChannel implements a secure channel for binary data over Tcp.
 type serverSecureChannel struct {
 	sync.RWMutex
-	srv                         *Server
+	srv                         *UAServer
 	localCertificate            []byte
 	remoteCertificate           []byte
 	localPrivateKey             *rsa.PrivateKey
@@ -96,7 +96,7 @@ type serverSecureChannel struct {
 }
 
 // newServerSecureChannel initializes a new instance of the UaTcpSecureChannel.
-func newServerSecureChannel(srv *Server, conn net.Conn, receiveBufferSize, sendBufferSize, maxMessageSize, maxChunkCount uint32, trace bool) *serverSecureChannel {
+func newServerSecureChannel(srv *UAServer, conn net.Conn, receiveBufferSize, sendBufferSize, maxMessageSize, maxChunkCount uint32, trace bool) *serverSecureChannel {
 	ch := &serverSecureChannel{
 		srv:               srv,
 		conn:              conn,

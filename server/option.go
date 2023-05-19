@@ -2,14 +2,14 @@
 
 package server
 
-import "github.com/awcullen/opcua/ua"
+import "github.com/afs/server/pkg/opcua/ua"
 
 // Option is a functional option to be applied to a server during initialization.
-type Option func(*Server) error
+type Option func(*UAServer) error
 
 // WithSessionTimeout sets the number of milliseconds that a session may be unused before being closed by the server. (default: 2 min)
 func WithSessionTimeout(value float64) Option {
-	return func(srv *Server) error {
+	return func(srv *UAServer) error {
 		srv.sessionTimeout = value
 		return nil
 	}
@@ -17,7 +17,7 @@ func WithSessionTimeout(value float64) Option {
 
 // WithMaxSessionCount sets the number of sessions that may be active. (default: no limit)
 func WithMaxSessionCount(value uint32) Option {
-	return func(srv *Server) error {
+	return func(srv *UAServer) error {
 		srv.maxSessionCount = value
 		return nil
 	}
@@ -25,7 +25,7 @@ func WithMaxSessionCount(value uint32) Option {
 
 // WithMaxSubscriptionCount sets the number of subscription that may be active. (default: no limit)
 func WithMaxSubscriptionCount(value uint32) Option {
-	return func(srv *Server) error {
+	return func(srv *UAServer) error {
 		srv.maxSubscriptionCount = value
 		return nil
 	}
@@ -33,7 +33,7 @@ func WithMaxSubscriptionCount(value uint32) Option {
 
 // WithServerCapabilities sets the number of subscription that may be active. (default: no limit)
 func WithServerCapabilities(value *ua.ServerCapabilities) Option {
-	return func(srv *Server) error {
+	return func(srv *UAServer) error {
 		srv.serverCapabilities = value
 		return nil
 	}
@@ -41,7 +41,7 @@ func WithServerCapabilities(value *ua.ServerCapabilities) Option {
 
 // WithBuildInfo sets the BuildInfo returned by ServerStatus.
 func WithBuildInfo(value ua.BuildInfo) Option {
-	return func(srv *Server) error {
+	return func(srv *UAServer) error {
 		srv.buildInfo = value
 		return nil
 	}
@@ -49,7 +49,7 @@ func WithBuildInfo(value ua.BuildInfo) Option {
 
 // WithInsecureSkipVerify skips verification of client certificate. Skips checking HostName, Expiration, and Authority.
 func WithInsecureSkipVerify() Option {
-	return func(srv *Server) error {
+	return func(srv *UAServer) error {
 		srv.suppressCertificateExpired = true
 		srv.suppressCertificateChainIncomplete = true
 		return nil
@@ -58,7 +58,7 @@ func WithInsecureSkipVerify() Option {
 
 // WithTransportLimits ...
 func WithTransportLimits(receiveBufferSize, sendBufferSize, maxMessageSize, maxChunkCount uint32) Option {
-	return func(srv *Server) error {
+	return func(srv *UAServer) error {
 		srv.receiveBufferSize = receiveBufferSize
 		srv.sendBufferSize = sendBufferSize
 		srv.maxMessageSize = maxMessageSize
@@ -69,7 +69,7 @@ func WithTransportLimits(receiveBufferSize, sendBufferSize, maxMessageSize, maxC
 
 // WithMaxWorkerThreads sets the default number of worker threads that may be created. (default: 4)
 func WithMaxWorkerThreads(value int) Option {
-	return func(opts *Server) error {
+	return func(opts *UAServer) error {
 		opts.maxWorkerThreads = value
 		return nil
 	}
@@ -77,7 +77,7 @@ func WithMaxWorkerThreads(value int) Option {
 
 // WithServerDiagnostics sets whether to enable the collection of data used for ServerDiagnostics node.
 func WithServerDiagnostics(value bool) Option {
-	return func(opts *Server) error {
+	return func(opts *UAServer) error {
 		opts.serverDiagnostics = value
 		return nil
 	}
@@ -85,7 +85,7 @@ func WithServerDiagnostics(value bool) Option {
 
 // WithTrace logs all ServiceRequests and ServiceResponses to StdOut.
 func WithTrace() Option {
-	return func(srv *Server) error {
+	return func(srv *UAServer) error {
 		srv.trace = true
 		return nil
 	}
@@ -93,7 +93,7 @@ func WithTrace() Option {
 
 // WithAnonymousIdentity sets whether to allow anonymous identity.
 func WithAnonymousIdentity(value bool) Option {
-	return func(srv *Server) error {
+	return func(srv *UAServer) error {
 		srv.allowAnonymousIdentity = value
 		return nil
 	}
@@ -101,7 +101,7 @@ func WithAnonymousIdentity(value bool) Option {
 
 // WithSecurityPolicyNone sets whether to allow security policy with no encryption.
 func WithSecurityPolicyNone(value bool) Option {
-	return func(srv *Server) error {
+	return func(srv *UAServer) error {
 		srv.allowSecurityPolicyNone = value
 		return nil
 	}
@@ -109,7 +109,7 @@ func WithSecurityPolicyNone(value bool) Option {
 
 // WithUserNameIdentityAuthenticator sets the authenticator for UserNameIdentity.
 func WithUserNameIdentityAuthenticator(authenticator UserNameIdentityAuthenticator) Option {
-	return func(srv *Server) error {
+	return func(srv *UAServer) error {
 		srv.userNameIdentityAuthenticator = authenticator
 		return nil
 	}
@@ -117,7 +117,7 @@ func WithUserNameIdentityAuthenticator(authenticator UserNameIdentityAuthenticat
 
 // WithAuthenticateUserNameIdentityFunc sets the authenticate func for UserNameIdentity.
 func WithAuthenticateUserNameIdentityFunc(f AuthenticateUserNameIdentityFunc) Option {
-	return func(srv *Server) error {
+	return func(srv *UAServer) error {
 		srv.userNameIdentityAuthenticator = f
 		return nil
 	}
@@ -125,7 +125,7 @@ func WithAuthenticateUserNameIdentityFunc(f AuthenticateUserNameIdentityFunc) Op
 
 // WithX509IdentityAuthenticator sets the authenticator for X509Identity.
 func WithX509IdentityAuthenticator(authenticator X509IdentityAuthenticator) Option {
-	return func(srv *Server) error {
+	return func(srv *UAServer) error {
 		srv.x509IdentityAuthenticator = authenticator
 		return nil
 	}
@@ -133,7 +133,7 @@ func WithX509IdentityAuthenticator(authenticator X509IdentityAuthenticator) Opti
 
 // WithAuthenticateX509IdentityFunc sets the authenticate func for X509Identity.
 func WithAuthenticateX509IdentityFunc(f AuthenticateX509IdentityFunc) Option {
-	return func(srv *Server) error {
+	return func(srv *UAServer) error {
 		srv.x509IdentityAuthenticator = f
 		return nil
 	}
@@ -141,7 +141,7 @@ func WithAuthenticateX509IdentityFunc(f AuthenticateX509IdentityFunc) Option {
 
 // WithRolesProvider sets the RolesProvider.
 func WithRolesProvider(provider RolesProvider) Option {
-	return func(srv *Server) error {
+	return func(srv *UAServer) error {
 		srv.rolesProvider = provider
 		return nil
 	}
@@ -149,7 +149,7 @@ func WithRolesProvider(provider RolesProvider) Option {
 
 // WithRolePermissions sets the permissions for each role.
 func WithRolePermissions(permissions []ua.RolePermissionType) Option {
-	return func(srv *Server) error {
+	return func(srv *UAServer) error {
 		srv.rolePermissions = permissions
 		return nil
 	}
@@ -157,7 +157,7 @@ func WithRolePermissions(permissions []ua.RolePermissionType) Option {
 
 // WithHistorian sets the HistoryReadWriter.
 func WithHistorian(historian HistoryReadWriter) Option {
-	return func(srv *Server) error {
+	return func(srv *UAServer) error {
 		srv.historian = historian
 		return nil
 	}
